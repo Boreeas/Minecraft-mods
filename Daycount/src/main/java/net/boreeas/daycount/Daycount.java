@@ -25,16 +25,25 @@ public class Daycount extends JavaPlugin {
                         / 1000) / 24);
 
                 if (day != lastDay) {
-                    getServer().dispatchCommand(getServer().getConsoleSender(),
-                            "title @a title {text:\"Dawn\",bold:true}"
-                    );
-                    getServer().dispatchCommand(getServer().getConsoleSender(),
-                            "title @a subtitle {text:\"of the " + dayify(day + 1) + " day\",italic:true,color:gray}");
+                    update(day + 1);
                     lastDay = day;
                 }
             }
         }, 0, 1, TimeUnit.SECONDS);
         getLogger().info("[Daycount] Enabled");
+    }
+
+    private void update(int day) {
+        /*
+        getServer().dispatchCommand(getServer().getConsoleSender(),
+                "title @a title {text:\"Dawn\",bold:true}"
+        );
+        getServer().dispatchCommand(getServer().getConsoleSender(),
+                "title @a subtitle {text:\"of the " + dayify(day + 1) + " day\",italic:true,color:gray}");
+        */
+
+        getServer().dispatchCommand(getServer().getConsoleSender(),
+                "title @a title {text:\"Day " + day + "\"}");
     }
 
     // 1 => 1st
