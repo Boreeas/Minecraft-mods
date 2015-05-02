@@ -1,0 +1,4 @@
+name: Daycount
+main: net.boreeas.daycount.Daycount
+description: Update the title of the server every minecraft day
+version: 1.0
