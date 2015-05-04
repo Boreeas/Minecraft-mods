@@ -44,6 +44,8 @@ public class StreamFlowTileEntity extends TileEntity {
      * Maximum water in a block in mB
      */
     public static final int MAX_WATER = NOMINAL_WATER * 2;
+    private static final int ROUNDS = 5;
+    private static final int MAX_PASSIVE_UPDATES = 3;
     /**
      * Blocks that can be removed when trying to flow there
      */
@@ -92,25 +94,94 @@ public class StreamFlowTileEntity extends TileEntity {
     private int waterInBlock = 1000;
     private boolean isInfinite = false;
     private int depth = 0;
+    private Set<StreamFlowTileEntity> parents = new HashSet<>();
+    private int passiveUpdates;
 
     @Override
     public void updateEntity() {
         if (worldObj.getTotalWorldTime() % UPDATE_TIME_TICKS != 0) return;
 
-        addWaterInBlock(-LOSS);
-        if (waterInBlock == 0) {
-            worldObj.setBlock(xCoord, yCoord, zCoord, Blocks.air);
-        }
+        boolean action = false;
 
         if (canFlowDown()) {
             flowDown();
         }
 
-        flowLaterally(getPossibleLateralDirections());
+        Set<Direction> possibleLateralDirections = getPossibleLateralDirections();
+        if (!possibleLateralDirections.isEmpty()) {
+            flowLaterally(possibleLateralDirections);
+        }
 
         if (canFlowUp()) {
             flowUp();
         }
+
+
+        if (waterInBlock < NOMINAL_WATER) {
+            addWaterInBlock(request(NOMINAL_WATER - waterInBlock));
+        }
+
+
+        if (passiveUpdates++ >= MAX_PASSIVE_UPDATES) {
+            addWaterInBlock(-LOSS);
+        }
+
+
+        checkForDry();
+    }
+
+    private void checkForDry() {
+        if (waterInBlock == 0) {
+            worldObj.setBlock(xCoord, yCoord, zCoord, Blocks.air);
+            for (Direction direction: Direction.values()) {
+                getAdjStreamFlow(direction).onNeighborDriedOut(this);
+            }
+        }
+    }
+
+    private void onNeighborDriedOut(StreamFlowTileEntity flow) {
+        parents.remove(flow);
+    }
+
+    public int request(int amt) {
+        return request(amt, new HashSet<StreamFlowTileEntity>());
+    }
+
+    private int request(int amt, HashSet<StreamFlowTileEntity> blacklist) {
+        passiveUpdates = 0;
+        blacklist.add(this);
+
+        int accumulated = 0;
+        int polls = 0;
+        Set<StreamFlowTileEntity> open = new HashSet<>(parents);
+        while (accumulated < amt && polls++ < ROUNDS && !open.isEmpty()) {
+            Set<StreamFlowTileEntity> toRemove = new HashSet<>();
+
+            int reqAmt = Math.max((amt - accumulated) / open.size(), (int) (MAX_WATER * 0.01));
+
+            for (StreamFlowTileEntity parent: open) {
+                if (blacklist.contains(parent)) {
+                    toRemove.add(parent);
+                    continue;
+                }
+
+                int received = parent.request(reqAmt, blacklist);
+
+                // Streams that can't fulfill requests are not polled again
+                if (received < reqAmt) {
+                    toRemove.add(parent);
+                }
+
+                addWaterInBlock(received);
+            }
+
+            open.removeAll(toRemove);
+        }
+
+        int missing = Math.min(amt - accumulated, waterInBlock);
+        addWaterInBlock(-missing);
+
+        return accumulated + missing;
     }
 
 
@@ -133,18 +204,19 @@ public class StreamFlowTileEntity extends TileEntity {
 
         if (displacableBlocks.contains(target)) {
 
-            displace(x, y, z, getWaterInBlock() - NOMINAL_WATER);
-        } else if (target == Lively.BLOCK_STREAM_SOURCE) {
+            displace(x, y, z, getWaterInBlock() - (NOMINAL_WATER / 2));
+        } /*else if (target == Lively.BLOCK_STREAM_SOURCE) {
 
             int toPush = Math.min(getWaterInBlock() - NOMINAL_WATER, MAX_WATER - targetFlow.getWaterInBlock());
             targetFlow.addWaterInBlock(toPush);
             this.addWaterInBlock(-toPush);
-        } else {
+        } */ else {
 
             Lively.INSTANCE.logger.warn("Couldn't flow upwards to block " + target.getUnlocalizedName() + " at (" + x + ", " + y + ", " + z + ")");
         }
 
         targetFlow.depth = Math.max(depth - 1, targetFlow.depth);
+        targetFlow.addParent(this);
     }
 
     private void flowLaterally(Set<Direction> directions) {
@@ -160,20 +232,21 @@ public class StreamFlowTileEntity extends TileEntity {
 
             if (displacableBlocks.contains(target)) {
                 displace(x, y, z, 0);
-            } else {
+            } /*else {
                 StreamFlowTileEntity flow = getAdjStreamFlow(direction);
 
                 sum += flow.getWaterInBlock();
                 if (flow.depth > maxDepth) {
                     maxDepth = flow.depth;
                 }
-            }
+            }*/
         }
 
         int average = sum / (directions.size() + 1);
         for (Direction direction: directions) {
             getAdjStreamFlow(direction).setWaterInBlock(average);
             getAdjStreamFlow(direction).depth = maxDepth;
+            getAdjStreamFlow(direction).addParent(this);
         }
 
         setWaterInBlock(average);
@@ -193,18 +266,23 @@ public class StreamFlowTileEntity extends TileEntity {
         } else if (absorbingBlocks.contains(target)) {
 
             this.setWaterInBlock(0);
-        } else if (target == Lively.BLOCK_STREAM_SOURCE) {
+        } /* else if (target == Lively.BLOCK_STREAM_SOURCE) {
 
             int toPush = Math.min(this.getWaterInBlock(), NOMINAL_WATER - targetFlow.getWaterInBlock());
             targetFlow.addWaterInBlock(toPush);
             this.addWaterInBlock(-toPush);
-        } else {
+        } */ else {
 
             Lively.INSTANCE.logger.warn("Couldn't flow down to block " + target.getUnlocalizedName() + " at (" + x + ", " + y + ", " + z + ")");
         }
 
 
         targetFlow.depth = Math.max(depth + 1, targetFlow.depth);
+        targetFlow.addParent(this);
+    }
+
+    private void addParent(StreamFlowTileEntity streamFlowTileEntity) {
+        this.parents.add(streamFlowTileEntity);
     }
 
     private void displace(int x, int y, int z, int amount) {
@@ -214,7 +292,7 @@ public class StreamFlowTileEntity extends TileEntity {
         }
 
         worldObj.setBlock(x, y, z, Lively.BLOCK_STREAM_SOURCE);
-        getAdjStreamFlow(Direction.DOWN).setWaterInBlock(amount);
+        getFlow(x, y, z).setWaterInBlock(amount);
         if (!isInfinite()) {
             this.setWaterInBlock(-amount);
         }
@@ -222,8 +300,8 @@ public class StreamFlowTileEntity extends TileEntity {
 
     private boolean canFlowDown() {
         Block target = getBlock(Direction.DOWN);
-        return (target == Lively.BLOCK_STREAM_SOURCE && getAdjStreamFlow(Direction.DOWN).getWaterInBlock() < NOMINAL_WATER)
-                || displacableBlocks.contains(target) || absorbingBlocks.contains(target);
+        //return (target == Lively.BLOCK_STREAM_SOURCE && getFlow(Direction.DOWN).getWaterInBlock() < NOMINAL_WATER)
+        return displacableBlocks.contains(target) || absorbingBlocks.contains(target);
     }
 
     private Set<Direction> getPossibleLateralDirections() {
@@ -238,15 +316,15 @@ public class StreamFlowTileEntity extends TileEntity {
 
     private boolean canFlowLaterally(Direction adjacent) {
         Block target = getBlock(adjacent);
-        return (target == Lively.BLOCK_STREAM_SOURCE && getAdjStreamFlow(adjacent).getWaterInBlock() < this.getWaterInBlock())
-                || displacableBlocks.contains(target) /*|| absorbingBlocks.contains(target)*/;
+        // return (target == Lively.BLOCK_STREAM_SOURCE && getFlow(adjacent).getWaterInBlock() < this.getWaterInBlock())
+        return displacableBlocks.contains(target) /*|| absorbingBlocks.contains(target)*/;
     }
 
     private boolean canFlowUp() {
         Block target = getBlock(Direction.UP);
-        if (depth == 0 || waterInBlock <= NOMINAL_WATER) return false;
-        return (target == Lively.BLOCK_STREAM_SOURCE && getAdjStreamFlow(Direction.UP).getWaterInBlock() < MAX_WATER)
-                || displacableBlocks.contains(target);
+        if (depth == 0 || waterInBlock <= NOMINAL_WATER / 2) return false;
+        //return (target == Lively.BLOCK_STREAM_SOURCE && getFlow(Direction.UP).getWaterInBlock() < MAX_WATER)
+        return displacableBlocks.contains(target);
     }
 
     public int getWaterInBlock() {
@@ -279,7 +357,11 @@ public class StreamFlowTileEntity extends TileEntity {
     }
 
     private StreamFlowTileEntity getAdjStreamFlow(Direction direction) {
-        Object flow = worldObj.getTileEntity(xCoord + direction.dx, yCoord + direction.dy, zCoord + direction.dz);
+        return getFlow(xCoord + direction.dx, yCoord + direction.dy, zCoord + direction.dz);
+    }
+
+    private StreamFlowTileEntity getFlow(int x, int y, int z) {
+        Object flow = worldObj.getTileEntity(x, y, z);
         if (flow == null || !(flow instanceof StreamFlowTileEntity)) {
             // Sometimes blocks get removed by race conditions or similar
             return DummyStreamFlowTileEntity.INSTANCE;
