@@ -11,6 +11,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidRegistry;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * @author Malte Schütze
@@ -34,7 +35,7 @@ public class Lively {
     }
 
     @Mod.EventHandler
-    public void preload(FMLPreInitializationEvent evt) {
+    public void preload(@NotNull FMLPreInitializationEvent evt) {
         INSTANCE = this;
         this.logger = evt.getModLog();
         logger.info("[Lively] Entering preload");

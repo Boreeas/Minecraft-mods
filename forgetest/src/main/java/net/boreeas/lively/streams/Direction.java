@@ -16,7 +16,7 @@ public enum Direction {
     public final int dy;
     public final int dz;
 
-    private Direction(int dx, int dy, int dz) {
+    Direction(int dx, int dy, int dz) {
         this.dx = dx;
         this.dy = dy;
         this.dz = dz;

@@ -6,6 +6,7 @@ import net.minecraft.entity.item.EntityItem;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -94,14 +95,13 @@ public class StreamFlowTileEntity extends TileEntity {
     private int waterInBlock = 1000;
     private boolean isInfinite = false;
     private int depth = 0;
-    private Set<StreamFlowTileEntity> parents = new HashSet<>();
+    @NotNull
+    private final Set<StreamFlowTileEntity> parents = new HashSet<>();
     private int passiveUpdates;
 
     @Override
     public void updateEntity() {
         if (worldObj.getTotalWorldTime() % UPDATE_TIME_TICKS != 0) return;
-
-        boolean action = false;
 
         if (canFlowDown()) {
             flowDown();
@@ -144,10 +144,10 @@ public class StreamFlowTileEntity extends TileEntity {
     }
 
     public int request(int amt) {
-        return request(amt, new HashSet<StreamFlowTileEntity>());
+        return request(amt, new HashSet<>());
     }
 
-    private int request(int amt, HashSet<StreamFlowTileEntity> blacklist) {
+    private int request(int amt, @NotNull HashSet<StreamFlowTileEntity> blacklist) {
         passiveUpdates = 0;
         blacklist.add(this);
 
@@ -185,6 +185,7 @@ public class StreamFlowTileEntity extends TileEntity {
     }
 
 
+    @NotNull
     private Direction randomDirection() {
         switch (worldObj.rand.nextInt(4)) {
             case 0: return Direction.NORTH;
@@ -219,7 +220,7 @@ public class StreamFlowTileEntity extends TileEntity {
         targetFlow.addParent(this);
     }
 
-    private void flowLaterally(Set<Direction> directions) {
+    private void flowLaterally(@NotNull Set<Direction> directions) {
 
         int sum = getWaterInBlock();
         int maxDepth = depth;
@@ -304,6 +305,7 @@ public class StreamFlowTileEntity extends TileEntity {
         return displacableBlocks.contains(target) || absorbingBlocks.contains(target);
     }
 
+    @NotNull
     private Set<Direction> getPossibleLateralDirections() {
         Set<Direction> result = new HashSet<>();
         if (canFlowLaterally(Direction.NORTH)) result.add(Direction.NORTH);
@@ -314,15 +316,27 @@ public class StreamFlowTileEntity extends TileEntity {
         return result;
     }
 
-    private boolean canFlowLaterally(Direction adjacent) {
+    private boolean canFlowLaterally(@NotNull Direction adjacent) {
         Block target = getBlock(adjacent);
         // return (target == Lively.BLOCK_STREAM_SOURCE && getFlow(adjacent).getWaterInBlock() < this.getWaterInBlock())
+        if (canFlowDown() || hasAdjFlowRoom(Direction.DOWN)) return false;
         return displacableBlocks.contains(target) /*|| absorbingBlocks.contains(target)*/;
+    }
+
+    private boolean hasAdjFlowRoom(@NotNull Direction direction) {
+        return getBlock(direction) == Lively.BLOCK_STREAM_SOURCE && getAdjStreamFlow(direction).getWaterInBlock() < NOMINAL_WATER;
     }
 
     private boolean canFlowUp() {
         Block target = getBlock(Direction.UP);
+        if (canFlowDown()) return false;
+        if (!getPossibleLateralDirections().isEmpty()) return false;
+        if (hasAdjFlowRoom(Direction.NORTH) || hasAdjFlowRoom(Direction.SOUTH) || hasAdjFlowRoom(Direction.EAST) || hasAdjFlowRoom(Direction.WEST)) {
+            return false;
+        }
         if (depth == 0 || waterInBlock <= NOMINAL_WATER / 2) return false;
+
+
         //return (target == Lively.BLOCK_STREAM_SOURCE && getFlow(Direction.UP).getWaterInBlock() < MAX_WATER)
         return displacableBlocks.contains(target);
     }
@@ -352,14 +366,16 @@ public class StreamFlowTileEntity extends TileEntity {
     }
 
 
-    private Block getBlock(Direction direction) {
+    private Block getBlock(@NotNull Direction direction) {
         return worldObj.getBlock(xCoord + direction.dx, yCoord + direction.dy, zCoord + direction.dz);
     }
 
-    private StreamFlowTileEntity getAdjStreamFlow(Direction direction) {
+    @NotNull
+    private StreamFlowTileEntity getAdjStreamFlow(@NotNull Direction direction) {
         return getFlow(xCoord + direction.dx, yCoord + direction.dy, zCoord + direction.dz);
     }
 
+    @NotNull
     private StreamFlowTileEntity getFlow(int x, int y, int z) {
         Object flow = worldObj.getTileEntity(x, y, z);
         if (flow == null || !(flow instanceof StreamFlowTileEntity)) {
@@ -375,7 +391,8 @@ public class StreamFlowTileEntity extends TileEntity {
     }
 
     private static class DummyStreamFlowTileEntity extends StreamFlowTileEntity {
-        static DummyStreamFlowTileEntity INSTANCE = new DummyStreamFlowTileEntity();
+        @NotNull
+        static final DummyStreamFlowTileEntity INSTANCE = new DummyStreamFlowTileEntity();
 
         @Override
         public int getWaterInBlock() {
@@ -392,6 +409,25 @@ public class StreamFlowTileEntity extends TileEntity {
 
         @Override
         public void updateEntity() {
+        }
+
+        @Override
+        public boolean isInfinite() {
+            return false;
+        }
+
+        @Override
+        public int getDepth() {
+            return 0;
+        }
+
+        @Override
+        public int request(int amt) {
+            return 0;
+        }
+
+        @Override
+        public void setInfinite(boolean flag) {
         }
     }
 }

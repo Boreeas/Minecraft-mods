@@ -8,6 +8,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraftforge.common.BiomeDictionary;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -19,21 +20,21 @@ import java.util.Set;
  */
 public class StreamSourceGenerator implements IWorldGenerator {
 
-    private static final Set<BiomeDictionary.Type> blacklistedBiomes = new HashSet<BiomeDictionary.Type>(Arrays.asList(
+    private static final Set<BiomeDictionary.Type> blacklistedBiomes = new HashSet<>(Arrays.asList(
             BiomeDictionary.Type.BEACH,
             BiomeDictionary.Type.DRY,
             BiomeDictionary.Type.RIVER,
             BiomeDictionary.Type.OCEAN
     ));
 
-    private static final Set<BiomeDictionary.Type> forcedBiomes = new HashSet<BiomeDictionary.Type>(Arrays.asList(
+    private static final Set<BiomeDictionary.Type> forcedBiomes = new HashSet<>(Arrays.asList(
             BiomeDictionary.Type.MOUNTAIN
     ));
     public static final int MIN_HEIGHT = 100;
 
 
     @Override
-    public void generate(Random random, int chunkX, int chunkZ, World world, IChunkProvider chunkGenerator, IChunkProvider chunkProvider) {
+    public void generate(@NotNull Random random, int chunkX, int chunkZ, @NotNull World world, IChunkProvider chunkGenerator, IChunkProvider chunkProvider) {
         long time = System.currentTimeMillis();
 
         int attempts = 50;
@@ -57,16 +58,16 @@ public class StreamSourceGenerator implements IWorldGenerator {
         }
     }
 
-    public boolean generate(World world, Random random, int x, int y, int z) {
+    public boolean generate(@NotNull World world, Random random, int x, int y, int z) {
         //if (isSuitableBiome(world, x, y, z) && canGenerateAtPos(world, x, y, z)) {
-            world.setBlock(x, y, z, Lively.INSTANCE.BLOCK_STREAM_SOURCE);
+            world.setBlock(x, y, z, Lively.BLOCK_STREAM_SOURCE);
             return true;
         //}
 
         //return false;
     }
 
-    public boolean isSuitableBiome(World world, int x, int y, int z) {
+    public boolean isSuitableBiome(@NotNull World world, int x, int y, int z) {
         BiomeGenBase biomeBase = world.getBiomeGenForCoords(x, z);
 
         BiomeDictionary.Type[] types = BiomeDictionary.getTypesForBiome(biomeBase);
@@ -83,15 +84,11 @@ public class StreamSourceGenerator implements IWorldGenerator {
         return true;
     }
 
-    public boolean canGenerateAtPos(World world, int x, int y, int z) {
+    public boolean canGenerateAtPos(@NotNull World world, int x, int y, int z) {
         if (y < MIN_HEIGHT) return false;
 
         Block block = world.getBlock(x, y, z);
-        if (block == Blocks.stone || block == Blocks.dirt || block == Blocks.grass || block == Blocks.gravel) {
-            return true;
-        }
-
-        return false;
+        return block == Blocks.stone || block == Blocks.dirt || block == Blocks.grass || block == Blocks.gravel;
     }
 
 }

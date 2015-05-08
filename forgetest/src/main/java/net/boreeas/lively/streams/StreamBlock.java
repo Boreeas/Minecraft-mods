@@ -9,6 +9,8 @@ import net.minecraft.world.World;
 import net.minecraftforge.fluids.BlockFluidBase;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Random;
 
@@ -17,21 +19,20 @@ import java.util.Random;
  */
 public class StreamBlock extends BlockFluidBase implements ITileEntityProvider {
     private static final int FLAG_UPDATE_CLIENTS = 2;
-    public static final String NAME = "blockStreamSource";
+    @NotNull public static final String NAME = "blockStreamSource";
 
-    public StreamBlock(Fluid fluid, Material material) {
+    public StreamBlock(@NotNull Fluid fluid, @NotNull Material material) {
         super(fluid, material);
         super.setDensity(500);
     }
 
     @Override
-    public boolean canDisplace(IBlockAccess world, int x, int y, int z) {
-        if (world.getBlock(x, y, z) == Blocks.water) return false;
-        return super.canDisplace(world, x, y, z);
+    public boolean canDisplace(@NotNull IBlockAccess world, int x, int y, int z) {
+        return world.getBlock(x, y, z) != Blocks.water && super.canDisplace(world, x, y, z);
     }
 
     @Override
-    public int getQuantaValue(IBlockAccess world, int x, int y, int z) {
+    public int getQuantaValue(@NotNull IBlockAccess world, int x, int y, int z) {
         if (world.getBlock(x, y, z) == Blocks.air) {
             return 0;
         }
@@ -53,23 +54,25 @@ public class StreamBlock extends BlockFluidBase implements ITileEntityProvider {
         return 0;
     }
 
+    @Nullable
     @Override
-    public FluidStack drain(World world, int x, int y, int z, boolean doDrain) {
+    public FluidStack drain(@NotNull World world, int x, int y, int z, boolean doDrain) {
         world.setBlockMetadataWithNotify(x, y, z, 0, FLAG_UPDATE_CLIENTS);
         return null;
     }
 
     @Override
-    public boolean canDrain(World world, int x, int y, int z) {
+    public boolean canDrain(@NotNull World world, int x, int y, int z) {
         return world.getBlock(x, y, z) == this;
     }
 
     @Override
-    public void updateTick(World world, int x, int y, int z, Random rand) {
+    public void updateTick(@NotNull World world, int x, int y, int z, Random rand) {
     }
 
+    @NotNull
     @Override
-    public TileEntity createNewTileEntity(World p_149915_1_, int p_149915_2_) {
+    public TileEntity createNewTileEntity(@NotNull World p_149915_1_, int p_149915_2_) {
         return new StreamFlowTileEntity();
     }
 
