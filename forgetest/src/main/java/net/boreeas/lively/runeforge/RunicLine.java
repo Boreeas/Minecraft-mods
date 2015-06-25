@@ -144,7 +144,7 @@ public class RunicLine extends Block {
             return;
         }
 
-        if (isFocusBlock(world.getBlock(x, y, z)) && world.getBlock(x, y + 1, z) == this) {
+        if (isFocusBlock(world.getBlock(x, y, z))) {
             evt.setCanceled(true);
             onFocusBlockClicked(world, x, y, z, evt.entityPlayer);
         } else if (world.getBlock(x, y, z) == this) {
