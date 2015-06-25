@@ -3,7 +3,9 @@ package net.boreeas.lively.runeforge.runes;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import net.boreeas.lively.runeforge.Effect;
+import net.boreeas.lively.runeforge.EffectZone;
 import net.boreeas.lively.runeforge.Rune;
+import net.boreeas.lively.runeforge.RuneZone;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
 import org.jetbrains.annotations.NotNull;
@@ -25,8 +27,20 @@ public class RuneHealth extends Rune {
 
     @NotNull
     @Override
-    public Effect makeEffect() {
-        return new HealthEffect();
+    public Effect makeEffect(@NotNull RuneZone zone) {
+        return new HealthEffect(zone);
+    }
+
+    @NotNull
+    @Override
+    public Effect makeEffect(@NotNull RuneZone zone, @NotNull EffectZone associatedEffectZone) {
+        return new HealthEffect(zone, associatedEffectZone);
+    }
+
+    @NotNull
+    @Override
+    public Effect makeEffect(@NotNull RuneZone zone, @NotNull Effect modTarget) {
+        return new HealthEffect(zone, modTarget);
     }
 
     public class HealthEffect extends Effect {
@@ -48,6 +62,18 @@ public class RuneHealth extends Rune {
          */
         private int cooldown = 1000;
         private Cache<EntityLivingBase, EntityLivingBase> cache = makeCacheBuilder();
+
+        public HealthEffect(@NotNull RuneZone assosciatedRune) {
+            super(assosciatedRune);
+        }
+
+        public HealthEffect(@NotNull RuneZone associatedRuneZone, @NotNull EffectZone effectZone) {
+            super(associatedRuneZone, effectZone);
+        }
+
+        public HealthEffect(@NotNull RuneZone associatedRuneZone, @NotNull Effect modTarget) {
+            super(associatedRuneZone, modTarget);
+        }
 
         /**
          * Returns the cooldown between successive applications in milliseconds
