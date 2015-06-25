@@ -6,6 +6,7 @@ import net.boreeas.lively.util.*;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.renderer.texture.IIconRegister;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.util.AxisAlignedBB;
@@ -139,49 +140,60 @@ public class RunicLine extends Block {
 
         if (world.isRemote) return;
 
-        if (evt.action != PlayerInteractEvent.Action.RIGHT_CLICK_BLOCK
-                || world.getBlock(x, y, z) != this) {
+        if (evt.action != PlayerInteractEvent.Action.RIGHT_CLICK_BLOCK) {
             return;
         }
 
-        evt.setCanceled(true);
+        if (isFocusBlock(world.getBlock(x, y, z)) && world.getBlock(x, y + 1, z) == this) {
+            evt.setCanceled(true);
+            onFocusBlockClicked(world, x, y, z, evt.entityPlayer);
+        } else if (world.getBlock(x, y, z) == this) {
+            evt.setCanceled(true);
+            onRuneBlockClicked(world, x, y, z, evt.entityPlayer);
+        }
+    }
 
+    private void onRuneBlockClicked(@NotNull World world, int x, int y, int z, @NotNull EntityPlayer player) throws ExecutionException {
         if (!isFocusBlock(world.getBlock(x, y - 1, z))) {
-            evt.entityPlayer.addChatMessage(new ChatComponentText("You feel energy stirring, but it is lacking a focus. The energy dissipates."));
+            player.addChatMessage(new ChatComponentText("You feel energy stirring, but it is lacking a focus. The energy dissipates."));
             return;
         }
 
-        Optional<Vec3Int> alignmentPosOpt = findAlignmentBlock(x, y - 1, z, world);
+        onFocusBlockClicked(world, x, y - 1, z, player);
+    }
+
+    private void onFocusBlockClicked(@NotNull World world, int x, int y, int z, @NotNull EntityPlayer player) throws ExecutionException {
+        Optional<Vec3Int> alignmentPosOpt = findAlignmentBlock(x, y, z, world);
         if (!alignmentPosOpt.isPresent()) {
-            evt.entityPlayer.addChatMessage(new ChatComponentText("The energy is focused through the block, but lacking a direction, is flows away."));
+            player.addChatMessage(new ChatComponentText("The energy is focused through the block, but lacking a direction, is flows away."));
             return;
         }
 
         Vec3Int alignmentPos = alignmentPosOpt.get();
         int radius = x == alignmentPos.x ? Math.abs(z - alignmentPos.z) : Math.abs(x - alignmentPos.x);
-        Optional<Vec3Int> brokenLink = matchCircle(world, new Vec3Int(x, y - 1, z), radius);
+        Optional<Vec3Int> brokenLink = matchCircle(world, new Vec3Int(x, y, z), radius);
         if (brokenLink.isPresent()) {
-            alertBrokenLink(evt, brokenLink.get());
+            alertBrokenLink(brokenLink.get(), player);
             return;
         }
 
         Direction alignment = alignmentPos.x == x ? (z > alignmentPos.z ? Direction.NORTH : Direction.SOUTH) : (x < alignmentPos.x ? Direction.EAST : Direction.WEST);
-        boolean[][] runeBlocks = loadRune(world, x, y, z, radius, alignment);
+        boolean[][] runeBlocks = loadRune(world, x, y + 1, z, radius, alignment);
 
         Rune match = Lively.INSTANCE.runeRegistry.match(runeBlocks);
         if (match == null) {
-            evt.entityPlayer.addChatMessage(new ChatComponentText("The energy circulates inside the rune. But nothing happens..."));
+            player.addChatMessage(new ChatComponentText("The energy circulates inside the rune. But nothing happens..."));
         } else {
-            evt.entityPlayer.addChatMessage(new ChatComponentText("The energy circulates inside the rune. You feel a distant humming..."));
-            activateRune(match, new GlobalCoord(world, x, y, z), radius);
+            player.addChatMessage(new ChatComponentText("The energy circulates inside the rune. You feel a distant humming..."));
+            activateRune(match, new GlobalCoord(world, x, y + 1, z), radius);
         }
     }
 
-    private void alertBrokenLink(@NotNull PlayerInteractEvent evt, @NotNull Vec3Int brokenLink) {
-        evt.entityPlayer.addChatMessage(new ChatComponentText("The energy builds up, but lacks containment. The energy disappears"));
+    private void alertBrokenLink(@NotNull Vec3Int brokenLink, EntityPlayer player) {
+        player.addChatMessage(new ChatComponentText("The energy builds up, but lacks containment. The energy disappears"));
         String fmtX = brokenLink.x < 0 ? (-brokenLink.x + " blocks west") : (brokenLink.x + " blocks east");
         String fmtZ = brokenLink.z < 0 ? (-brokenLink.z + " blocks north") : (brokenLink.z + " blocks south");
-        evt.entityPlayer.addChatMessage(new ChatComponentText("(Containment circle lacking component " + fmtX + ", " + fmtZ + ")"));
+        player.addChatMessage(new ChatComponentText("(Containment circle lacking component " + fmtX + ", " + fmtZ + ")"));
     }
 
     private void activateRune(@NotNull Rune match, @NotNull GlobalCoord coords, int radius) throws ExecutionException {
