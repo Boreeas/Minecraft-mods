@@ -1,15 +1,14 @@
 package net.boreeas.lively.runeforge;
 
 import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.relauncher.Side;
 import net.boreeas.lively.util.GlobalCoord;
+import net.boreeas.lively.util.SetCacheLoader;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -17,20 +16,20 @@ import java.util.concurrent.ExecutionException;
 /**
  * @author Malte Schütze
  */
-public class ZoneLookup {
-    private LoadingCache<GlobalCoord, Set<EffectZone>> entityTargetedZonesByChunk = CacheBuilder.newBuilder().build(new SetCacheLoader());
-    private LoadingCache<GlobalCoord, Set<EffectZone>> livingTargetedZonesByChunk = CacheBuilder.newBuilder().build(new SetCacheLoader());
-    private LoadingCache<GlobalCoord, Set<EffectZone>> playerTargetedZonesByChunk = CacheBuilder.newBuilder().build(new SetCacheLoader());
-    private LoadingCache<GlobalCoord, Set<EffectZone>> periodicallyWorldTargetedZonesByChunk = CacheBuilder.newBuilder().build(new SetCacheLoader());
-    private LoadingCache<GlobalCoord, Set<EffectZone>> onceWorldTargetedZonesByChunk = CacheBuilder.newBuilder().build(new SetCacheLoader());
+public class EffectZoneLookup {
+    private LoadingCache<GlobalCoord, Set<EffectZone>> entityTargetedZonesByChunk = CacheBuilder.newBuilder().build(new SetCacheLoader<>());
+    private LoadingCache<GlobalCoord, Set<EffectZone>> livingTargetedZonesByChunk = CacheBuilder.newBuilder().build(new SetCacheLoader<>());
+    private LoadingCache<GlobalCoord, Set<EffectZone>> playerTargetedZonesByChunk = CacheBuilder.newBuilder().build(new SetCacheLoader<>());
+    private LoadingCache<GlobalCoord, Set<EffectZone>> periodicallyWorldTargetedZonesByChunk = CacheBuilder.newBuilder().build(new SetCacheLoader<>());
+    private LoadingCache<GlobalCoord, Set<EffectZone>> onceWorldTargetedZonesByChunk = CacheBuilder.newBuilder().build(new SetCacheLoader<>());
 
-    private LoadingCache<GlobalCoord, Set<EffectZone>> globalZones = CacheBuilder.newBuilder().build(new SetCacheLoader());
+    private LoadingCache<GlobalCoord, Set<EffectZone>> globalZones = CacheBuilder.newBuilder().build(new SetCacheLoader<>());
 
     public void addEffectZone(EffectZone zone) throws ExecutionException {
-        int minChunkX = (zone.getCoords().getX() - zone.getEffectRadius()) / 16;
-        int maxChunkX = (zone.getCoords().getX() + zone.getEffectRadius()) / 16;
-        int minChunkZ = (zone.getCoords().getZ() - zone.getEffectRadius()) / 16;
-        int maxChunkZ = (zone.getCoords().getZ() + zone.getEffectRadius()) / 16;
+        int minChunkX = (zone.getCoords().getX() - zone.getRadius()) / 16;
+        int maxChunkX = (zone.getCoords().getX() + zone.getRadius()) / 16;
+        int minChunkZ = (zone.getCoords().getZ() - zone.getRadius()) / 16;
+        int maxChunkZ = (zone.getCoords().getZ() + zone.getRadius()) / 16;
 
         for (int x = minChunkX; x <= maxChunkX; x++) {
             for (int z = minChunkZ; z <= maxChunkZ; z++) {
@@ -63,16 +62,8 @@ public class ZoneLookup {
      * @param coord
      * @return
      */
-    public boolean isCoordMaybePartOfRune(@NotNull GlobalCoord coord) {
-        try {
-            Set<EffectZone> zones = globalZones.get(coord);
-            if (zones.isEmpty()) globalZones.invalidate(coord);
-
-            return zones.parallelStream().anyMatch(zone -> zone.contains(coord));
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-            return false;
-        }
+    public boolean isCoordMaybePartOfEffect(@NotNull GlobalCoord coord) {
+        return getZoneWithPosition(coord).isPresent();
     }
 
     public @NotNull Optional<EffectZone> getZoneWithPosition(@NotNull GlobalCoord coord) {
@@ -89,38 +80,45 @@ public class ZoneLookup {
     }
 
     public void remove(@NotNull EffectZone zone) {
-        int minChunkX = (zone.getCoords().getX() - zone.getEffectRadius()) / 16;
-        int maxChunkX = (zone.getCoords().getX() + zone.getEffectRadius()) / 16;
-        int minChunkZ = (zone.getCoords().getZ() - zone.getEffectRadius()) / 16;
-        int maxChunkZ = (zone.getCoords().getZ() + zone.getEffectRadius()) / 16;
+        int minChunkX = (zone.getCoords().getX() - zone.getRadius()) / 16;
+        int maxChunkX = (zone.getCoords().getX() + zone.getRadius()) / 16;
+        int minChunkZ = (zone.getCoords().getZ() - zone.getRadius()) / 16;
+        int maxChunkZ = (zone.getCoords().getZ() + zone.getRadius()) / 16;
 
         try {
             for (int x = minChunkX; x <= maxChunkX; x++) {
                 for (int z = minChunkZ; z <= maxChunkZ; z++) {
+                    GlobalCoord chunkCoords = new GlobalCoord(zone.getCoords().getWorld(), x, 0, z);
                     switch (zone.getEffect().getEffectType()) {
                         case PLAYER:
-                            playerTargetedZonesByChunk.get(new GlobalCoord(zone.getCoords().getWorld(), x, 0, z)).remove(zone);
+                            removeFrom(zone, chunkCoords, playerTargetedZonesByChunk);
                             break;
                         case ENTITY_LIVING:
-                            livingTargetedZonesByChunk.get(new GlobalCoord(zone.getCoords().getWorld(), x, 0, z)).remove(zone);
+                            removeFrom(zone, chunkCoords, livingTargetedZonesByChunk);
                             break;
                         case ENTITY:
-                            entityTargetedZonesByChunk.get(new GlobalCoord(zone.getCoords().getWorld(), x, 0, z)).remove(zone);
+                            removeFrom(zone, chunkCoords, entityTargetedZonesByChunk);
                             break;
                         case WORLD_ONCE:
-                            onceWorldTargetedZonesByChunk.get(new GlobalCoord(zone.getCoords().getWorld(), x, 0, z)).remove(zone);
+                            removeFrom(zone, chunkCoords, onceWorldTargetedZonesByChunk);
                             break;
                         case WORLD_PERIODICALLY:
-                            periodicallyWorldTargetedZonesByChunk.get(new GlobalCoord(zone.getCoords().getWorld(), x, 0, z)).remove(zone);
+                            removeFrom(zone, chunkCoords, periodicallyWorldTargetedZonesByChunk);
                             break;
                     }
 
-                    globalZones.get(new GlobalCoord(zone.getCoords().getWorld(), x, 0, z)).remove(zone);
+                    removeFrom(zone, chunkCoords, globalZones);
                 }
             }
         } catch (ExecutionException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    private void removeFrom(@NotNull EffectZone zone, GlobalCoord coords, LoadingCache<GlobalCoord, Set<EffectZone>> zoneMap) throws ExecutionException {
+        Set<EffectZone> zones = zoneMap.get(coords);
+        zones.remove(zone);
+        if (zones.isEmpty()) zoneMap.invalidate(coords);
     }
 
     @SubscribeEvent
@@ -170,10 +168,4 @@ public class ZoneLookup {
         }
     }
 
-    private static class SetCacheLoader extends CacheLoader<GlobalCoord, Set<EffectZone>> {
-        @Override
-        public Set<EffectZone> load(GlobalCoord _) throws Exception {
-            return new HashSet<>();
-        }
-    }
 }

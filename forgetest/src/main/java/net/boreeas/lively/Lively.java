@@ -4,10 +4,7 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.registry.GameRegistry;
-import net.boreeas.lively.runeforge.RunicLine;
-import net.boreeas.lively.runeforge.OuterRuneItem;
-import net.boreeas.lively.runeforge.RuneRegistry;
-import net.boreeas.lively.runeforge.ZoneLookup;
+import net.boreeas.lively.runeforge.*;
 import net.boreeas.lively.runeforge.runes.RuneHealth;
 import net.boreeas.lively.streams.StreamBlock;
 import net.minecraft.block.material.Material;
@@ -38,7 +35,8 @@ public class Lively {
 
     public Logger logger;
     public final RuneRegistry runeRegistry = new RuneRegistry();
-    public final ZoneLookup zoneLookup = new ZoneLookup();
+    public final EffectZoneLookup effectZoneLookup = new EffectZoneLookup();
+    public final RuneZoneLookup runeZoneLookup = new RuneZoneLookup();
 
     public static final Fluid FLUID_STREAM_WATER = new Fluid(FLUID_STREAM_WATER_NAME);
     public static final StreamBlock BLOCK_STREAM_SOURCE = new StreamBlock(FLUID_STREAM_WATER, Material.water);
@@ -68,7 +66,7 @@ public class Lively {
         runeRegistry.register(new RuneHealth());
 
         MinecraftForge.EVENT_BUS.register(RunicLine.INSTANCE);
-        FMLCommonHandler.instance().bus().register(zoneLookup);
+        FMLCommonHandler.instance().bus().register(effectZoneLookup);
     }
 
     public static String muid(String name) {

@@ -10,19 +10,14 @@ import org.jetbrains.annotations.NotNull;
 /**
  * @author Malte Schütze
  */
-public class EffectZone {
+public class EffectZone extends Zone {
     private Effect effect;
     private int effectStrength;
-    private GlobalCoord coords;
-    private int effectRadius;
-    private int runeRadius;
 
-    public EffectZone(@NotNull Effect effect, @NotNull GlobalCoord coords, int effectStrength, int effectRadius, int runeRadius) {
+    public EffectZone(@NotNull Effect effect, @NotNull GlobalCoord coords, int effectStrength, int effectRadius) {
+        super(coords, effectRadius);
         this.effect = effect;
-        this.coords = coords;
         this.effectStrength = effectStrength;
-        this.effectRadius = effectRadius;
-        this.runeRadius = runeRadius;
     }
 
     public void applyToPlayer(@NotNull EntityPlayer player) {
@@ -45,19 +40,6 @@ public class EffectZone {
         effect.applyToWorldPeriodically(world, effectStrength);
     }
 
-    public @NotNull GlobalCoord getCoords() {
-        return coords;
-    }
-
-    /**
-     * Return the radius of the circle in which this rune has an effect. This is always guaranteed to be larger or equal
-     * to the rune radius
-     * @return
-     */
-    public int getEffectRadius() {
-        return effectRadius;
-    }
-
     /**
      * Return the effect of this rune
      * @return
@@ -70,22 +52,4 @@ public class EffectZone {
         return effectStrength;
     }
 
-    /**
-     * Return the rune radius (the radius of the circle that this rune physically occupies)
-     * @return the rune radius
-     */
-    public int getRuneRadius() {
-        return runeRadius;
-    }
-
-    public boolean contains(@NotNull GlobalCoord coords) {
-        if (coords.getWorld() != this.coords.getWorld() || coords.getY() != this.coords.getY()) {
-            return false;
-        }
-
-        int dx = coords.getX() - this.coords.getX();
-        int dz = coords.getZ() - this.coords.getZ();
-
-        return dx*dx + dz*dz <= runeRadius*runeRadius;
-    }
 }

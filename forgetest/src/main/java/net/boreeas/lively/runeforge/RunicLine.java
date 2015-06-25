@@ -148,11 +148,11 @@ public class RunicLine extends Block {
         if (evt.entityPlayer.isSneaking()) return;
 
         if (isFocusBlock(world.getBlock(x, y, z))) {
-            if (Lively.INSTANCE.zoneLookup.isCoordMaybePartOfRune(new GlobalCoord(world, x, y + 1, z))) return; // No double activation
+            if (Lively.INSTANCE.effectZoneLookup.isCoordMaybePartOfEffect(new GlobalCoord(world, x, y + 1, z))) return; // No double activation
             evt.setCanceled(true);
             onFocusBlockClicked(world, x, y, z, evt.entityPlayer);
         } else if (world.getBlock(x, y, z) == this) {
-            if (Lively.INSTANCE.zoneLookup.isCoordMaybePartOfRune(new GlobalCoord(world, x, y, z))) return; // No double activation
+            if (Lively.INSTANCE.effectZoneLookup.isCoordMaybePartOfEffect(new GlobalCoord(world, x, y, z))) return; // No double activation
             evt.setCanceled(true);
             onRuneBlockClicked(world, x, y, z, evt.entityPlayer);
         }
@@ -203,7 +203,7 @@ public class RunicLine extends Block {
 
     private void activateRune(@NotNull Rune match, @NotNull GlobalCoord coords, int radius) throws ExecutionException {
         Effect effect = match.makeEffect();
-        Lively.INSTANCE.zoneLookup.addEffectZone(new EffectZone(effect, coords, 1, 16, radius));
+        Lively.INSTANCE.effectZoneLookup.addEffectZone(new EffectZone(effect, coords, 1, 16));
     }
 
     /**
@@ -342,6 +342,6 @@ public class RunicLine extends Block {
     public void breakBlock(@NotNull World world, int x, int y, int z, @Nullable Block block, int idonteven) {
         super.breakBlock(world, x, y, z, block, idonteven);
 
-        Lively.INSTANCE.zoneLookup.getZoneWithPosition(new GlobalCoord(world, x, y, z)).ifPresent(Lively.INSTANCE.zoneLookup::remove);
+        Lively.INSTANCE.runeZoneLookup.getZoneWithPosition(new GlobalCoord(world, x, y, z)).ifPresent(zone -> zone.getAssociatedEffect().remove());
     }
 }
