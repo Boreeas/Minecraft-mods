@@ -23,7 +23,9 @@ public abstract class Rune {
         this.flags = ArrayUtil.trim(flags);
     }
 
-    public abstract @NotNull Effect makeEffect();
+    public abstract @NotNull Effect makeEffect(@NotNull RuneZone zone);
+    public abstract @NotNull Effect makeEffect(@NotNull RuneZone zone, @NotNull EffectZone associatedEffectZone);
+    public abstract @NotNull Effect makeEffect(@NotNull RuneZone zone, @NotNull Effect modTarget);
 
     public @NotNull String getName() {
         return name;
