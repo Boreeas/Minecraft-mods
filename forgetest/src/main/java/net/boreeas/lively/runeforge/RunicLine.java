@@ -144,6 +144,9 @@ public class RunicLine extends Block {
             return;
         }
 
+        // Allow sneaking to place blocks instead of trying to activate a rune
+        if (evt.entityPlayer.isSneaking()) return;
+
         if (isFocusBlock(world.getBlock(x, y, z))) {
             evt.setCanceled(true);
             onFocusBlockClicked(world, x, y, z, evt.entityPlayer);
