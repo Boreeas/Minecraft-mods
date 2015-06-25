@@ -86,6 +86,6 @@ public class EffectZone {
         int dx = coords.getX() - this.coords.getX();
         int dz = coords.getZ() - this.coords.getZ();
 
-        return dx*dx + dz*dz < runeRadius*runeRadius;
+        return dx*dx + dz*dz <= runeRadius*runeRadius;
     }
 }

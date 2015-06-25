@@ -77,8 +77,9 @@ public class ZoneLookup {
 
     public @NotNull Optional<EffectZone> getZoneWithPosition(@NotNull GlobalCoord coord) {
         try {
-            Set<EffectZone> zones = globalZones.get(coord);
-            if (zones.isEmpty()) globalZones.invalidate(coord);
+            GlobalCoord chunkCoords = new GlobalCoord(coord.getWorld(), coord.getX() / 16, 0, coord.getZ() / 16);
+            Set<EffectZone> zones = globalZones.get(chunkCoords);
+            if (zones.isEmpty()) globalZones.invalidate(chunkCoords);
 
             return zones.parallelStream().filter(zone -> zone.contains(coord)).findAny();
         } catch (ExecutionException e) {

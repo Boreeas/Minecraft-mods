@@ -7,6 +7,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * @author Malte Schütze
  */
+
 public class GlobalCoord {
     private final World world;
     private final int x;
@@ -57,5 +58,10 @@ public class GlobalCoord {
 
     public int getZ() {
         return z;
+    }
+
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName() + "[" + world + "/x=" + x + ",y=" + y + ",z=" + z +"]";
     }
 }
