@@ -148,9 +148,11 @@ public class RunicLine extends Block {
         if (evt.entityPlayer.isSneaking()) return;
 
         if (isFocusBlock(world.getBlock(x, y, z))) {
+            if (Lively.INSTANCE.zoneLookup.isCoordMaybePartOfRune(new GlobalCoord(world, x, y + 1, z))) return; // No double activation
             evt.setCanceled(true);
             onFocusBlockClicked(world, x, y, z, evt.entityPlayer);
         } else if (world.getBlock(x, y, z) == this) {
+            if (Lively.INSTANCE.zoneLookup.isCoordMaybePartOfRune(new GlobalCoord(world, x, y, z))) return; // No double activation
             evt.setCanceled(true);
             onRuneBlockClicked(world, x, y, z, evt.entityPlayer);
         }
