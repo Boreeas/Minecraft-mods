@@ -1,6 +1,7 @@
 package net.boreeas.lively.streams;
 
 import net.boreeas.lively.Lively;
+import net.boreeas.lively.util.Direction;
 import net.minecraft.block.Block;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.init.Blocks;

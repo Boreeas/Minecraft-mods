@@ -1,4 +1,4 @@
-package net.boreeas.lively;
+package net.boreeas.lively.util;
 
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
@@ -41,5 +41,21 @@ public class GlobalCoord {
         result = 31 * result + y;
         result = 31 * result + z;
         return result;
+    }
+
+    public World getWorld() {
+        return world;
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    public int getZ() {
+        return z;
     }
 }

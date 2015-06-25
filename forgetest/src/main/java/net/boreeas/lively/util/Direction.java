@@ -1,4 +1,4 @@
-package net.boreeas.lively.streams;
+package net.boreeas.lively.util;
 
 /**
  * @author Malte Schütze

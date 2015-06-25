@@ -31,3 +31,5 @@ forgetest.ipr
 MinecraftForge*
 README.txt
 logs
+
+*.xcf

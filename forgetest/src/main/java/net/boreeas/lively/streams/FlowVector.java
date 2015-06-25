@@ -1,5 +1,6 @@
 package net.boreeas.lively.streams;
 
+import net.boreeas.lively.util.Direction;
 import org.jetbrains.annotations.NotNull;
 
 /**

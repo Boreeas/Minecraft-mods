@@ -1,0 +1,16 @@
+[
+{
+  "modid": "lively",
+  "name": "Lively",
+  "description": "Worldgen fun",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["Boreeas"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]

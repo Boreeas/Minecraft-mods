@@ -1,6 +1,6 @@
 package net.boreeas.lively.streams;
 
-import net.boreeas.lively.GlobalCoord;
+import net.boreeas.lively.util.GlobalCoord;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 
@@ -22,6 +22,8 @@ public class FlowManager {
     }
 
     public void mergeLayers(@NotNull PoolLayer first, @NotNull PoolLayer second) {
-
+        for (StreamFlowTileEntity tile: second.getTiles()) {
+            first.addTile(tile);
+        }
     }
 }
