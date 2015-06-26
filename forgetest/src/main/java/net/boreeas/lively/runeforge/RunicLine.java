@@ -3,15 +3,14 @@ package net.boreeas.lively.runeforge;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import net.boreeas.lively.Lively;
 import net.boreeas.lively.util.*;
+import net.boreeas.lively.util.Direction;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
-import net.minecraft.util.AxisAlignedBB;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.IIcon;
+import net.minecraft.util.*;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
@@ -148,11 +147,11 @@ public class RunicLine extends Block {
         if (evt.entityPlayer.isSneaking()) return;
 
         if (isFocusBlock(world.getBlock(x, y, z))) {
-            if (Lively.INSTANCE.effectZoneLookup.isCoordMaybePartOfEffect(new GlobalCoord(world, x, y + 1, z))) return; // No double activation
+            if (Lively.INSTANCE.runeZoneLookup.isCoordMaybePartOfRune(new GlobalCoord(world, x, y + 1, z))) return; // No double activation
             evt.setCanceled(true);
             onFocusBlockClicked(world, x, y, z, evt.entityPlayer);
         } else if (world.getBlock(x, y, z) == this) {
-            if (Lively.INSTANCE.effectZoneLookup.isCoordMaybePartOfEffect(new GlobalCoord(world, x, y, z))) return; // No double activation
+            if (Lively.INSTANCE.runeZoneLookup.isCoordMaybePartOfRune(new GlobalCoord(world, x, y, z))) return; // No double activation
             evt.setCanceled(true);
             onRuneBlockClicked(world, x, y, z, evt.entityPlayer);
         }
@@ -185,12 +184,12 @@ public class RunicLine extends Block {
         Direction alignment = alignmentPos.x == x ? (z > alignmentPos.z ? Direction.NORTH : Direction.SOUTH) : (x < alignmentPos.x ? Direction.EAST : Direction.WEST);
         boolean[][] runeBlocks = loadRune(world, x, y + 1, z, radius, alignment);
 
-        Rune match = Lively.INSTANCE.runeRegistry.match(runeBlocks);
-        if (match == null) {
+        Optional<Rune> match = Lively.INSTANCE.runeRegistry.match(runeBlocks);
+        if (!match.isPresent()) {
             player.addChatMessage(new ChatComponentText("The energy circulates inside the rune. But nothing happens..."));
         } else {
             player.addChatMessage(new ChatComponentText("The energy circulates inside the rune. You feel a distant humming..."));
-            activateRune(match, new GlobalCoord(world, x, y + 1, z), radius);
+            activateRune(match.get(), new GlobalCoord(world, x, y + 1, z), radius);
         }
     }
 
@@ -202,8 +201,75 @@ public class RunicLine extends Block {
     }
 
     private void activateRune(@NotNull Rune match, @NotNull GlobalCoord coords, int radius) throws ExecutionException {
-        Effect effect = match.makeEffect();
-        Lively.INSTANCE.effectZoneLookup.addEffectZone(new EffectZone(effect, coords, 1, 16));
+        RuneZone zone = new RuneZone(coords, radius);
+        EffectZone effectZone = new EffectZone(coords, 1, 16);
+        Effect effect = match.makeEffect(zone, effectZone);
+        zone.setAssociatedEffect(effect);
+        effectZone.setAssociatedEffect(effect);
+
+        checkForModificators(coords.getWorld(), coords.getX(), coords.getY(), coords.getZ(), radius, effect);
+        Lively.INSTANCE.effectZoneLookup.addEffectZone(effectZone);
+    }
+
+    private void checkForModificators(World world, int x, int y, int z, int radius, Effect parent) {
+
+        if (isValidContainmentBlock(world, x + radius, y, z) && isValidContainmentBlock(world, x + radius + 1, y, z)) {
+            scanForModificatorRune(world, x + radius + 1, y, z, Direction.EAST, parent);
+        }
+
+        if (isValidContainmentBlock(world, x - radius, y, z) && isValidContainmentBlock(world, x - radius - 1, y, z)) {
+            scanForModificatorRune(world, x - radius - 1, y, z, Direction.WEST, parent);
+        }
+
+        if (isValidContainmentBlock(world, x, y, z + radius) && isValidContainmentBlock(world, x, y, z + radius + 1)) {
+            scanForModificatorRune(world, x, y, z + radius + 1, Direction.SOUTH, parent);
+        }
+
+        if (isValidContainmentBlock(world, x, y, z - radius) && isValidContainmentBlock(world, x, y, z - radius - 1)) {
+            scanForModificatorRune(world, x, y, z - radius - 1, Direction.NORTH, parent);
+        }
+    }
+
+    private void scanForModificatorRune(World world, int x, int y, int z, Direction direction, Effect parent) {
+        while (isValidContainmentBlock(world, x, y, z)) {
+            x += direction.dx;
+            z += direction.dz;
+        }
+
+        if (!isFocusBlock(world.getBlock(x, y, z))) {
+            return;
+        }
+
+        int radius;
+        for (radius = 1; radius <= MAX_FOCUS_RADIUS; radius++) {
+            if (isFocusBlock(world.getBlock(x, y, z))) {
+                break;
+            }
+
+            x += direction.dx;
+            z += direction.dz;
+        }
+
+        if (!isFocusBlock(world.getBlock(x, y, z))) {
+            return;
+        }
+
+        if (matchCircle(world, new Vec3Int(x, y, z), radius).isPresent()) {
+            return;
+        }
+
+        boolean[][] runeBlocks = loadRune(world, x, y, z, radius, direction.invert());
+        Optional<Rune> match = Lively.INSTANCE.runeRegistry.match(runeBlocks);
+
+        if (!match.isPresent()) {
+            return;
+        }
+
+        RuneZone zone = new RuneZone(new GlobalCoord(world, x, y, z), radius);
+        Effect effect = match.get().makeEffect(zone, parent);
+        zone.setAssociatedEffect(effect);
+
+        checkForModificators(world, x, y, z, radius, effect);
     }
 
     /**

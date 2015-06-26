@@ -20,6 +20,11 @@ public class EffectZone extends Zone {
         this.effectStrength = effectStrength;
     }
 
+    public EffectZone(@NotNull GlobalCoord coords, int effectStrength, int effectRadius) {
+        super(coords, effectRadius);
+        this.effectStrength = effectStrength;
+    }
+
     public void applyToPlayer(@NotNull EntityPlayer player) {
         effect.applyToPlayer(player, effectStrength);
     }
@@ -52,4 +57,9 @@ public class EffectZone extends Zone {
         return effectStrength;
     }
 
+    public void setAssociatedEffect(Effect associatedEffect) {
+        // delayed assignment during construction
+        if (this.effect != null) throw new IllegalStateException("already assigned");
+        this.effect = associatedEffect;
+    }
 }
