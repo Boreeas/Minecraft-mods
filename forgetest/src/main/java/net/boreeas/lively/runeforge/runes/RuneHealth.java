@@ -101,7 +101,12 @@ public class RuneHealth extends Rune {
 
             if (super.applyToLiving(living, effectStrength)) return true;
 
-            living.heal(amt * effectStrength);
+            if (amt > 0){
+                living.heal(amt * effectStrength);
+            } else {
+                living.setHealth(living.getHealth() + amt);
+                living.performHurtAnimation();
+            }
 
             Random random = living.worldObj.rand;
             living.worldObj.spawnParticle("heart", living.posX + random.nextDouble()*2 - 0.5, living.posY, living.posZ + random.nextDouble()*2 - 0.5,

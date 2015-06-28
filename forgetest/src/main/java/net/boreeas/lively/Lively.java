@@ -6,6 +6,7 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.registry.GameRegistry;
 import net.boreeas.lively.runeforge.*;
 import net.boreeas.lively.runeforge.runes.RuneHealth;
+import net.boreeas.lively.runeforge.runes.RuneNot;
 import net.boreeas.lively.streams.StreamBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.creativetab.CreativeTabs;
@@ -64,6 +65,7 @@ public class Lively {
         GameRegistry.registerItem(OuterRuneItem.INSTANCE, OuterRuneItem.NAME);
 
         runeRegistry.register(new RuneHealth());
+        runeRegistry.register(new RuneNot());
 
         MinecraftForge.EVENT_BUS.register(RunicLine.INSTANCE);
         FMLCommonHandler.instance().bus().register(effectZoneLookup);

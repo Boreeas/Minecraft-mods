@@ -100,7 +100,7 @@ public abstract class Effect {
         modificators.remove(effect);
     }
 
-    private void unmodify(@NotNull Effect effect) {
+    public void unmodify(@NotNull Effect effect) {
 
     }
 

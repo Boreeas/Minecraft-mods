@@ -11,4 +11,9 @@ public class Vec3Int {
         this.y = y;
         this.z = z;
     }
+
+    @Override
+    public String toString() {
+        return "Vec3Int[x=" + x + ",y=" + y + ",z=" + z + "]";
+    }
 }

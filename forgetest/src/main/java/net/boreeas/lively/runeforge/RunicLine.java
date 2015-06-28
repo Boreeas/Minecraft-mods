@@ -207,38 +207,43 @@ public class RunicLine extends Block {
         zone.setAssociatedEffect(effect);
         effectZone.setAssociatedEffect(effect);
 
-        checkForModificators(coords.getWorld(), coords.getX(), coords.getY(), coords.getZ(), radius, effect);
+        checkForModificators(coords.getWorld(), coords.getX(), coords.getY() - 1, coords.getZ(), radius, effect);
         Lively.INSTANCE.effectZoneLookup.addEffectZone(effectZone);
     }
 
     private void checkForModificators(World world, int x, int y, int z, int radius, Effect parent) {
 
-        if (isValidContainmentBlock(world, x + radius, y, z) && isValidContainmentBlock(world, x + radius + 1, y, z)) {
+        if (isValidContainmentBlock(world.getBlock(x, y, z)) && isValidContainmentBlock(world.getBlock(x, y, z))) {
             scanForModificatorRune(world, x + radius + 1, y, z, Direction.EAST, parent);
         }
 
-        if (isValidContainmentBlock(world, x - radius, y, z) && isValidContainmentBlock(world, x - radius - 1, y, z)) {
+        if (isValidContainmentBlock(world.getBlock(x, y, z)) && isValidContainmentBlock(world.getBlock(x, y, z))) {
             scanForModificatorRune(world, x - radius - 1, y, z, Direction.WEST, parent);
         }
 
-        if (isValidContainmentBlock(world, x, y, z + radius) && isValidContainmentBlock(world, x, y, z + radius + 1)) {
+        if (isValidContainmentBlock(world.getBlock(x, y, z)) && isValidContainmentBlock(world.getBlock(x, y, z))) {
             scanForModificatorRune(world, x, y, z + radius + 1, Direction.SOUTH, parent);
         }
 
-        if (isValidContainmentBlock(world, x, y, z - radius) && isValidContainmentBlock(world, x, y, z - radius - 1)) {
+        if (isValidContainmentBlock(world.getBlock(x, y, z)) && isValidContainmentBlock(world.getBlock(x, y, z))) {
             scanForModificatorRune(world, x, y, z - radius - 1, Direction.NORTH, parent);
         }
     }
 
     private void scanForModificatorRune(World world, int x, int y, int z, Direction direction, Effect parent) {
-        while (isValidContainmentBlock(world, x, y, z)) {
+        Block block = world.getBlock(x, y, z);
+        while (isValidContainmentBlock(block) && !isFocusBlock(block)) {
             x += direction.dx;
             z += direction.dz;
+            block = world.getBlock(x, y, z);
         }
 
         if (!isFocusBlock(world.getBlock(x, y, z))) {
             return;
         }
+
+        x += direction.dx;
+        z += direction.dz;
 
         int radius;
         for (radius = 1; radius <= MAX_FOCUS_RADIUS; radius++) {
@@ -254,18 +259,19 @@ public class RunicLine extends Block {
             return;
         }
 
-        if (matchCircle(world, new Vec3Int(x, y, z), radius).isPresent()) {
+        Optional<Vec3Int> vec3Int = matchCircle(world, new Vec3Int(x, y, z), radius);
+        if (vec3Int.isPresent()) {
             return;
         }
 
-        boolean[][] runeBlocks = loadRune(world, x, y, z, radius, direction.invert());
+        boolean[][] runeBlocks = loadRune(world, x, y + 1, z, radius, direction.invert());
         Optional<Rune> match = Lively.INSTANCE.runeRegistry.match(runeBlocks);
 
         if (!match.isPresent()) {
             return;
         }
 
-        RuneZone zone = new RuneZone(new GlobalCoord(world, x, y, z), radius);
+        RuneZone zone = new RuneZone(new GlobalCoord(world, x, y + 1, z), radius);
         Effect effect = match.get().makeEffect(zone, parent);
         zone.setAssociatedEffect(effect);
 
@@ -288,21 +294,21 @@ public class RunicLine extends Block {
         int flag = 1 - x;
 
         while (x >= z) {
-            if (!isValidContainmentBlock(world, x + center.x, center.y, z + center.z))
+            if (!isValidContainmentBlock(world.getBlock(center.x + x, center.y, center.z + z)))
                 return Optional.of(new Vec3Int(x, 0, z));
-            if (!isValidContainmentBlock(world, z + center.x, center.y, x + center.z))
+            if (!isValidContainmentBlock(world.getBlock(center.x + z, center.y, center.z + x)))
                 return Optional.of(new Vec3Int(z, 0, x));
-            if (!isValidContainmentBlock(world, -x + center.x, center.y, z + center.z))
+            if (!isValidContainmentBlock(world.getBlock(center.x - x, center.y, center.z + z)))
                 return Optional.of(new Vec3Int(-x, 0, z));
-            if (!isValidContainmentBlock(world, -z + center.x, center.y, x + center.z))
+            if (!isValidContainmentBlock(world.getBlock(center.x - z, center.y, center.z + x)))
                 return Optional.of(new Vec3Int(-z, 0, x));
-            if (!isValidContainmentBlock(world, x + center.x, center.y, -z + center.z))
+            if (!isValidContainmentBlock(world.getBlock(center.x + x, center.y, center.z - z)))
                 return Optional.of(new Vec3Int(x, 0, -z));
-            if (!isValidContainmentBlock(world, z + center.x, center.y, -x + center.z))
+            if (!isValidContainmentBlock(world.getBlock(center.x + z, center.y, center.z - x)))
                 return Optional.of(new Vec3Int(z, 0, -x));
-            if (!isValidContainmentBlock(world, -x + center.x, center.y, -z + center.z))
+            if (!isValidContainmentBlock(world.getBlock(center.x - x, center.y, center.z - z)))
                 return Optional.of(new Vec3Int(-x, 0, -z));
-            if (!isValidContainmentBlock(world, -z + center.x, center.y, -x + center.z))
+            if (!isValidContainmentBlock(world.getBlock(center.x - z, center.y, center.z - x)))
                 return Optional.of(new Vec3Int(-z, 0, -x));
 
             z++;
@@ -356,8 +362,7 @@ public class RunicLine extends Block {
         return ArrayUtil.trim(runeBlocks);
     }
 
-    private boolean isValidContainmentBlock(@NotNull World world, int x, int y, int z) {
-        Block blk = world.getBlock(x, y, z);
+    private boolean isValidContainmentBlock(Block blk) {
         return isFocusBlock(blk) || blk == Blocks.stone;
     }
 
