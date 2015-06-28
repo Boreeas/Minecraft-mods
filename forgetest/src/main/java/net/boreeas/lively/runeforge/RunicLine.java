@@ -227,6 +227,7 @@ public class RunicLine extends Block {
 
         checkForModificators(coords.getWorld(), coords.getX(), coords.getY() - 1, coords.getZ(), radius, effect);
         Lively.INSTANCE.effectZoneLookup.addEffectZone(effectZone);
+        Lively.INSTANCE.runeZoneLookup.add(zone);
     }
 
     private void checkForModificators(World world, int x, int y, int z, int radius, Effect parent) {
@@ -293,6 +294,7 @@ public class RunicLine extends Block {
         Effect effect = match.get().makeEffect(zone, parent);
         zone.setAssociatedEffect(effect);
 
+        Lively.INSTANCE.runeZoneLookup.add(zone);
         checkForModificators(world, x, y, z, radius, effect);
     }
 
