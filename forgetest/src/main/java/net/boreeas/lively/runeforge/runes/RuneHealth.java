@@ -104,7 +104,7 @@ public class RuneHealth extends Rune {
             if (amt > 0){
                 living.heal(amt * effectStrength);
             } else {
-                living.setHealth(living.getHealth() + amt);
+                living.setHealth(living.getHealth() + (amt * effectStrength));
                 living.performHurtAnimation();
             }
 
