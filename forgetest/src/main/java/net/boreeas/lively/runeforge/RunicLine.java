@@ -3,20 +3,23 @@ package net.boreeas.lively.runeforge;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import net.boreeas.lively.Lively;
 import net.boreeas.lively.util.*;
-import net.boreeas.lively.util.Direction;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
-import net.minecraft.util.*;
+import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
@@ -27,6 +30,19 @@ import java.util.concurrent.ExecutionException;
 public class RunicLine extends Block {
     public static final RunicLine INSTANCE = new RunicLine();
     public static final String NAME = "rune_outer";
+    public static final Map<Block, Integer> containmentRatings = new HashMap<>();
+    static {
+        containmentRatings.put(Blocks.planks, 1);
+        containmentRatings.put(Blocks.stone, 2);
+        containmentRatings.put(Blocks.lapis_block, 5);
+        containmentRatings.put(Blocks.diamond_block, 5);
+    }
+    public static final Map<Block, Integer> focusRatings = new HashMap<>();
+    static {
+        focusRatings.put(Blocks.lapis_block, 2);
+        focusRatings.put(Blocks.diamond_block, 5);
+    }
+
     private static final int MAX_FOCUS_RADIUS = 8;
     private IIcon iconBlank;
     private IIcon iconSingle;
@@ -175,9 +191,9 @@ public class RunicLine extends Block {
 
         Vec3Int alignmentPos = alignmentPosOpt.get();
         int radius = x == alignmentPos.x ? Math.abs(z - alignmentPos.z) : Math.abs(x - alignmentPos.x);
-        Optional<Vec3Int> brokenLink = matchCircle(world, new Vec3Int(x, y, z), radius);
-        if (brokenLink.isPresent()) {
-            alertBrokenLink(brokenLink.get(), player);
+        Result<Integer, Vec3Int> circle = matchCircle(world, new Vec3Int(x, y, z), radius);
+        if (!circle.isOk()) {
+            alertBrokenLink(circle.getFail(), player);
             return;
         }
 
@@ -189,7 +205,7 @@ public class RunicLine extends Block {
             player.addChatMessage(new ChatComponentText("The energy circulates inside the rune. But nothing happens..."));
         } else {
             player.addChatMessage(new ChatComponentText("The energy circulates inside the rune. You feel a distant humming..."));
-            activateRune(match.get(), new GlobalCoord(world, x, y + 1, z), radius);
+            activateRune(match.get(), new GlobalCoord(world, x, y + 1, z), radius, focusRatings.get(world.getBlock(x, y, z)), circle.getOk());
         }
     }
 
@@ -200,9 +216,11 @@ public class RunicLine extends Block {
         player.addChatMessage(new ChatComponentText("(Containment circle lacking component " + fmtX + ", " + fmtZ + ")"));
     }
 
-    private void activateRune(@NotNull Rune match, @NotNull GlobalCoord coords, int radius) throws ExecutionException {
+    private void activateRune(@NotNull Rune match, @NotNull GlobalCoord coords, int radius, int focusRating, int containmentRating) throws ExecutionException {
         RuneZone zone = new RuneZone(coords, radius);
-        EffectZone effectZone = new EffectZone(coords, 1, 16);
+
+        int effectStrength = calculateEffectStrength(radius, focusRating, containmentRating);
+        EffectZone effectZone = new EffectZone(coords, effectStrength, radius * Math.min(focusRating, containmentRating));
         Effect effect = match.makeEffect(zone, effectZone);
         zone.setAssociatedEffect(effect);
         effectZone.setAssociatedEffect(effect);
@@ -259,8 +277,8 @@ public class RunicLine extends Block {
             return;
         }
 
-        Optional<Vec3Int> vec3Int = matchCircle(world, new Vec3Int(x, y, z), radius);
-        if (vec3Int.isPresent()) {
+        Result<Integer, Vec3Int> circle = matchCircle(world, new Vec3Int(x, y, z), radius);
+        if (!circle.isOk()) {
             return;
         }
 
@@ -284,32 +302,50 @@ public class RunicLine extends Block {
      * @param world  The world where the center is placed
      * @param center The center of the circle
      * @param radius The radius of the circle
-     * @return A Vec3Int containing the bad position relative to the center, or <code>null</code> if the circle is complete
+     * @return Either a Vec3Int containing the bad position relative to the center, or the minimal containment rating of the circle
      */
     @NotNull
-    private Optional<Vec3Int> matchCircle(@NotNull World world, @NotNull Vec3Int center, int radius) {
+    private Result<Integer, Vec3Int> matchCircle(@NotNull World world, @NotNull Vec3Int center, int radius) {
         // See https://en.wikipedia.org/wiki/Midpoint_circle_algorithm#Example
         int x = radius;
         int z = 0;
         int flag = 1 - x;
 
-        while (x >= z) {
+        int minRating = Integer.MAX_VALUE;
+
+        while (x >= z) { // welcome to typo central
             if (!isValidContainmentBlock(world.getBlock(center.x + x, center.y, center.z + z)))
-                return Optional.of(new Vec3Int(x, 0, z));
+                return Result.fail(new Vec3Int(x, 0, z));
+            else minRating = Math.min(minRating, containmentRatings.get(world.getBlock(center.x + x, center.y, center.z + z)));
+
             if (!isValidContainmentBlock(world.getBlock(center.x + z, center.y, center.z + x)))
-                return Optional.of(new Vec3Int(z, 0, x));
+                return Result.fail(new Vec3Int(z, 0, x));
+            else minRating = Math.min(minRating, containmentRatings.get(world.getBlock(center.x + z, center.y, center.z + x)));
+
             if (!isValidContainmentBlock(world.getBlock(center.x - x, center.y, center.z + z)))
-                return Optional.of(new Vec3Int(-x, 0, z));
+                return Result.fail(new Vec3Int(-x, 0, z));
+            else minRating = Math.min(minRating, containmentRatings.get(world.getBlock(center.x - x, center.y, center.z + z)));
+
             if (!isValidContainmentBlock(world.getBlock(center.x - z, center.y, center.z + x)))
-                return Optional.of(new Vec3Int(-z, 0, x));
+                return Result.fail(new Vec3Int(-z, 0, x));
+            else minRating = Math.min(minRating, containmentRatings.get(world.getBlock(center.x - z, center.y, center.z + x)));
+
             if (!isValidContainmentBlock(world.getBlock(center.x + x, center.y, center.z - z)))
-                return Optional.of(new Vec3Int(x, 0, -z));
+                return Result.fail(new Vec3Int(x, 0, -z));
+            else minRating = Math.min(minRating, containmentRatings.get(world.getBlock(center.x + x, center.y, center.z - z)));
+
             if (!isValidContainmentBlock(world.getBlock(center.x + z, center.y, center.z - x)))
-                return Optional.of(new Vec3Int(z, 0, -x));
+                return Result.fail(new Vec3Int(z, 0, -x));
+            else minRating = Math.min(minRating, containmentRatings.get(world.getBlock(center.x + z, center.y, center.z - x)));
+
             if (!isValidContainmentBlock(world.getBlock(center.x - x, center.y, center.z - z)))
-                return Optional.of(new Vec3Int(-x, 0, -z));
+                return Result.fail(new Vec3Int(-x, 0, -z));
+            else minRating = Math.min(minRating, containmentRatings.get(world.getBlock(center.x - x, center.y, center.z - z)));
+
             if (!isValidContainmentBlock(world.getBlock(center.x - z, center.y, center.z - x)))
-                return Optional.of(new Vec3Int(-z, 0, -x));
+                return Result.fail(new Vec3Int(-z, 0, -x));
+            else minRating = Math.min(minRating, containmentRatings.get(world.getBlock(center.x - z, center.y, center.z - x)));
+
 
             z++;
             if (flag <= 0) {
@@ -320,7 +356,7 @@ public class RunicLine extends Block {
             }
         }
 
-        return Optional.empty();
+        return Result.ok(minRating);
     }
 
     @NotNull
@@ -363,11 +399,11 @@ public class RunicLine extends Block {
     }
 
     private boolean isValidContainmentBlock(Block blk) {
-        return isFocusBlock(blk) || blk == Blocks.stone;
+        return isFocusBlock(blk) || containmentRatings.containsKey(blk);
     }
 
     private boolean isFocusBlock(@NotNull Block blk) {
-        return blk == Blocks.diamond_block || blk == Blocks.lapis_block;
+        return focusRatings.containsKey(blk);
     }
 
     /**
@@ -414,5 +450,9 @@ public class RunicLine extends Block {
         super.breakBlock(world, x, y, z, block, idonteven);
 
         Lively.INSTANCE.runeZoneLookup.getZoneWithPosition(new GlobalCoord(world, x, y, z)).ifPresent(zone -> zone.getAssociatedEffect().remove());
+    }
+
+    private int calculateEffectStrength(int radius, int focusPower, int containmentPower) {
+        return Math.min(radius * radius * focusPower, radius * radius * containmentPower) / 20;
     }
 }
