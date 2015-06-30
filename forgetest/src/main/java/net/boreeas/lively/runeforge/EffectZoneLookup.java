@@ -20,7 +20,7 @@ import java.util.concurrent.ExecutionException;
  * @author Malte Schütze
  */
 public class EffectZoneLookup {
-    private static final int COOLDOWN = 50;
+    private static final int COOLDOWN = 25;
     private int counter = 0;
 
     private LoadingCache<GlobalCoord, Set<EffectZone>> entityTargetedZonesByChunk = CacheBuilder.newBuilder().build(new SetCacheLoader<>());

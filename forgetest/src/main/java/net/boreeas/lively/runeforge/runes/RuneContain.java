@@ -1,5 +1,7 @@
 package net.boreeas.lively.runeforge.runes;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import net.boreeas.lively.runeforge.Effect;
 import net.boreeas.lively.runeforge.EffectZone;
 import net.boreeas.lively.runeforge.Rune;
@@ -9,6 +11,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.play.server.S12PacketEntityVelocity;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Malte Schütze
@@ -42,6 +46,8 @@ public class RuneContain extends Rune {
 
     public static class EffectContain extends Effect {
 
+        Cache<Entity, GlobalCoord> cachedPos = CacheBuilder.newBuilder().expireAfterAccess(4, TimeUnit.SECONDS).build();
+
         public EffectContain(@NotNull RuneZone associatedRuneZone, @NotNull EffectZone effectZone) {
             super(associatedRuneZone, effectZone);
         }
@@ -69,10 +75,34 @@ public class RuneContain extends Rune {
             if (isNegated()) {
                 exclude(entity, effectStrength);
             } else {
-                //contain(entity, effectStrength);
+                contain(entity, effectStrength);
             }
 
             return true;
+        }
+
+        private void contain(Entity entity, int effectStrength) {
+            GlobalCoord center = getEffectZone().get().getCoords();
+            int radius = getEffectZone().get().getRadius();
+
+            double dx = entity.posX - center.getX();
+            double dz = entity.posZ - center.getZ();
+
+            double distSq = dx*dx + dz*dz;
+            int radSq = radius * radius;
+            if (distSq < (radSq - 4*radius - 4)) return;
+
+
+            double pushStrength = (1-(radSq-distSq)) / (radSq - distSq + 0.001);
+            pushStrength = Math.max(Math.min(pushStrength, 1), -1);
+
+            entity.motionX += pushStrength * dx / (Math.abs(dx) + Math.abs(dz));
+            entity.motionZ += pushStrength * dz / (Math.abs(dx) + Math.abs(dz));
+
+            if (entity instanceof EntityPlayerMP) {
+                S12PacketEntityVelocity packet = new S12PacketEntityVelocity(entity.getEntityId(), entity.motionX, 0, entity.motionZ);
+                ((EntityPlayerMP) entity).playerNetServerHandler.sendPacket(packet);
+            }
         }
 
         private void exclude(Entity entity, int effectStrength) {
@@ -89,7 +119,6 @@ public class RuneContain extends Rune {
 
             entity.motionX += pushStrength * dx / (Math.abs(dx) + Math.abs(dz));
             entity.motionZ += pushStrength * dz / (Math.abs(dx) + Math.abs(dz));
-            //entity.addVelocity(entity.motionX, 0, entity.motionZ);
 
             if (entity instanceof EntityPlayerMP) {
                 S12PacketEntityVelocity packet = new S12PacketEntityVelocity(entity.getEntityId(), entity.motionX, 0, entity.motionZ);
