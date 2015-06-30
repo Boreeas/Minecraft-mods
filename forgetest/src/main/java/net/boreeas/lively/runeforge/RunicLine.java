@@ -199,6 +199,10 @@ public class RunicLine extends Block {
 
         Direction alignment = alignmentPos.x == x ? (z > alignmentPos.z ? Direction.NORTH : Direction.SOUTH) : (x < alignmentPos.x ? Direction.EAST : Direction.WEST);
         boolean[][] runeBlocks = loadRune(world, x, y + 1, z, radius, alignment);
+        /*
+        System.out.println("clicked rune dump");
+        ArrayUtil.dump(runeBlocks);
+        //*/
 
         Optional<Rune> match = Lively.INSTANCE.runeRegistry.match(runeBlocks);
         if (!match.isPresent()) {

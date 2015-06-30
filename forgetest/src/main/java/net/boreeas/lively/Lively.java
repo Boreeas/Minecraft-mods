@@ -5,6 +5,7 @@ import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.registry.GameRegistry;
 import net.boreeas.lively.runeforge.*;
+import net.boreeas.lively.runeforge.runes.RuneContain;
 import net.boreeas.lively.runeforge.runes.RuneHealth;
 import net.boreeas.lively.runeforge.runes.RuneNot;
 import net.boreeas.lively.streams.StreamBlock;
@@ -66,6 +67,7 @@ public class Lively {
 
         runeRegistry.register(new RuneHealth());
         runeRegistry.register(new RuneNot());
+        runeRegistry.register(new RuneContain());
 
         MinecraftForge.EVENT_BUS.register(RunicLine.INSTANCE);
         FMLCommonHandler.instance().bus().register(effectZoneLookup);

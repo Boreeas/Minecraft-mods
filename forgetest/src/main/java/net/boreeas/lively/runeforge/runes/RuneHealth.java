@@ -6,13 +6,11 @@ import net.boreeas.lively.runeforge.Effect;
 import net.boreeas.lively.runeforge.EffectZone;
 import net.boreeas.lively.runeforge.Rune;
 import net.boreeas.lively.runeforge.RuneZone;
-import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
 /**
  * @author Malte Schütze
@@ -44,15 +42,7 @@ public class RuneHealth extends Rune {
     }
 
     public class HealthEffect extends Effect {
-        /**
-         * Filter to which entities the effect should be granted. Grant or deny depends on {@link #applicationType}
-         */
-        public Predicate<EntityLiving> filter = e -> false;
-        /**
-         * Filter behavior. {@link net.boreeas.lively.runeforge.runes.RuneHealth.ApplicationType#DENY_ON_PASS} denies the effect
-         * to all
-         */
-        public ApplicationType applicationType = ApplicationType.DENY_ON_PASS;
+
         /**
          * Heal amount in half hears
          */
@@ -100,6 +90,7 @@ public class RuneHealth extends Rune {
             cache.put(living, living);
 
             if (super.applyToLiving(living, effectStrength)) return true;
+            if (super.isDisabledByFilter(living)) return false;
 
             if (amt > 0){
                 living.heal(amt * effectStrength);
@@ -154,5 +145,4 @@ public class RuneHealth extends Rune {
         }
     }
 
-    public enum ApplicationType {APPLY_ON_PASS, DENY_ON_PASS}
 }

@@ -7,8 +7,11 @@ import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.relauncher.Side;
 import net.boreeas.lively.util.GlobalCoord;
 import net.boreeas.lively.util.SetCacheLoader;
+import net.minecraft.entity.Entity;
+import net.minecraft.util.AxisAlignedBB;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -17,6 +20,9 @@ import java.util.concurrent.ExecutionException;
  * @author Malte Schütze
  */
 public class EffectZoneLookup {
+    private static final int COOLDOWN = 50;
+    private int counter = 0;
+
     private LoadingCache<GlobalCoord, Set<EffectZone>> entityTargetedZonesByChunk = CacheBuilder.newBuilder().build(new SetCacheLoader<>());
     private LoadingCache<GlobalCoord, Set<EffectZone>> livingTargetedZonesByChunk = CacheBuilder.newBuilder().build(new SetCacheLoader<>());
     private LoadingCache<GlobalCoord, Set<EffectZone>> playerTargetedZonesByChunk = CacheBuilder.newBuilder().build(new SetCacheLoader<>());
@@ -125,9 +131,32 @@ public class EffectZoneLookup {
     public void onWorldTick(@NotNull TickEvent.WorldTickEvent evt) {
         if (evt.side == Side.CLIENT) return;
 
+        if (counter++ < COOLDOWN) return;
+        counter = 0;
+
 
         for (Set<EffectZone> worldZones: periodicallyWorldTargetedZonesByChunk.asMap().values()) {
             worldZones.forEach(zone -> zone.applyToWorldPeriodically(zone.getCoords().getWorld()));
+        }
+
+        Set<EffectZone> checked = new HashSet<>();
+        for (Set<EffectZone> zonesInChunk: entityTargetedZonesByChunk.asMap().values()) {
+            for (EffectZone zone: zonesInChunk) {
+                if (checked.contains(zone)) continue;
+                checked.add(zone);
+
+                GlobalCoord coord = zone.getCoords();
+                AxisAlignedBB aabb = AxisAlignedBB.getBoundingBox(coord.getX() - zone.getRadius(), 0, coord.getZ() - zone.getRadius(),
+                        coord.getX() + zone.getRadius(), Integer.MAX_VALUE, coord.getZ() + zone.getRadius());
+
+                for (Object entity : coord.getWorld().getEntitiesWithinAABB(Entity.class, aabb)) {
+                    if (!(entity instanceof Entity)) continue;
+
+                    if (zone.contains(new GlobalCoord(coord.getWorld(), ((int) ((Entity) entity).posX), ((int) ((Entity) entity).posY), ((int) ((Entity) entity).posZ)))) {
+                        zone.applyToEntity((Entity) entity);
+                    }
+                }
+            }
         }
     }
 

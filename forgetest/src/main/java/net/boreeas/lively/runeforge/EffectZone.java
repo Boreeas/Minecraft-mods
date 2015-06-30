@@ -62,4 +62,15 @@ public class EffectZone extends Zone {
         if (this.effect != null) throw new IllegalStateException("already assigned");
         this.effect = associatedEffect;
     }
+
+    public boolean contains(@NotNull GlobalCoord coords) {
+        if (coords.getWorld() != getCoords().getWorld()) {
+            return false;
+        }
+
+        int dx = coords.getX() - getCoords().getX();
+        int dz = coords.getZ() - getCoords().getZ();
+
+        return dx*dx + dz*dz <= getRadius()*getRadius();
+    }
 }

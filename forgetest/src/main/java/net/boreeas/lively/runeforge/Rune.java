@@ -21,6 +21,10 @@ public abstract class Rune {
         }
 
         this.flags = ArrayUtil.trim(flags);
+        /*
+        System.out.println("rune dump # " + name);
+        ArrayUtil.dump(flags);
+        //*/
     }
 
     public abstract @NotNull Effect makeEffect(@NotNull RuneZone zone);
