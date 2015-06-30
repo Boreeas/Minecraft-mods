@@ -236,19 +236,27 @@ public class RunicLine extends Block {
 
     private void checkForModificators(World world, int x, int y, int z, int radius, Effect parent) {
 
-        if (isValidContainmentBlock(world.getBlock(x, y, z)) && isValidContainmentBlock(world.getBlock(x, y, z))) {
+        Block inCircle = world.getBlock(x + radius, y, z);
+        Block nextOut = world.getBlock(x + radius + 1, y, z);
+        if (isValidContainmentBlock(inCircle) && isValidContainmentBlock(nextOut) && !isFocusBlock(inCircle)) {
             scanForModificatorRune(world, x + radius + 1, y, z, Direction.EAST, parent);
         }
 
-        if (isValidContainmentBlock(world.getBlock(x, y, z)) && isValidContainmentBlock(world.getBlock(x, y, z))) {
+        inCircle = world.getBlock(x - radius, y, z);
+        nextOut = world.getBlock(x - radius - 1, y, z);
+        if (isValidContainmentBlock(inCircle) && !isFocusBlock(inCircle) && isValidContainmentBlock(nextOut)) {
             scanForModificatorRune(world, x - radius - 1, y, z, Direction.WEST, parent);
         }
 
-        if (isValidContainmentBlock(world.getBlock(x, y, z)) && isValidContainmentBlock(world.getBlock(x, y, z))) {
+        inCircle = world.getBlock(x, y, z + radius);
+        nextOut = world.getBlock(x, y, z + radius + 1);
+        if (isValidContainmentBlock(inCircle) && !isFocusBlock(inCircle) && isValidContainmentBlock(nextOut)) {
             scanForModificatorRune(world, x, y, z + radius + 1, Direction.SOUTH, parent);
         }
 
-        if (isValidContainmentBlock(world.getBlock(x, y, z)) && isValidContainmentBlock(world.getBlock(x, y, z))) {
+        inCircle = world.getBlock(x, y, z - radius);
+        nextOut = world.getBlock(x, y, z - radius - 1);
+        if (isValidContainmentBlock(inCircle) && !isFocusBlock(inCircle) && isValidContainmentBlock(nextOut)) {
             scanForModificatorRune(world, x, y, z - radius - 1, Direction.NORTH, parent);
         }
     }
@@ -459,6 +467,6 @@ public class RunicLine extends Block {
     }
 
     private int calculateEffectStrength(int radius, int focusPower, int containmentPower) {
-        return Math.min(radius * radius * focusPower, radius * radius * containmentPower) / 20;
+        return (int) Math.round(Math.min(radius * radius * focusPower, radius * radius * containmentPower) / 10.0);
     }
 }

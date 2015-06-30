@@ -66,6 +66,16 @@ public class RuneContain extends Rune {
             if (isDisabledByFilter(entity)) return false;
             if (!getEffectZone().isPresent()) return false;
 
+            if (isNegated()) {
+                exclude(entity, effectStrength);
+            } else {
+                //contain(entity, effectStrength);
+            }
+
+            return true;
+        }
+
+        private void exclude(Entity entity, int effectStrength) {
             GlobalCoord center = getEffectZone().get().getCoords();
 
             double dx = entity.posX - center.getX();
@@ -75,7 +85,7 @@ public class RuneContain extends Rune {
             int effectRadius = getEffectZone().get().getRadius();
 
             double pushStrength = (effectRadius - dist) / (0.001 + dist);
-            pushStrength = Math.min(pushStrength, 0.5 * effectStrength);
+            pushStrength = Math.min(pushStrength, 2 * effectStrength);
 
             entity.motionX += pushStrength * dx / (Math.abs(dx) + Math.abs(dz));
             entity.motionZ += pushStrength * dz / (Math.abs(dx) + Math.abs(dz));
@@ -85,7 +95,6 @@ public class RuneContain extends Rune {
                 S12PacketEntityVelocity packet = new S12PacketEntityVelocity(entity.getEntityId(), entity.motionX, 0, entity.motionZ);
                 ((EntityPlayerMP) entity).playerNetServerHandler.sendPacket(packet);
             }
-            return true;
         }
     }
 }
