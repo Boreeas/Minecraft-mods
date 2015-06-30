@@ -140,5 +140,9 @@ public abstract class Effect {
         return (filterPass && filterType == FilterType.DENY_ON_PASS) || (!filterPass && filterType == FilterType.APPLY_ON_PASS);
     }
 
+    public Optional<Effect> getModTarget() {
+        return modTarget;
+    }
+
     public enum FilterType {APPLY_ON_PASS, DENY_ON_PASS}
 }

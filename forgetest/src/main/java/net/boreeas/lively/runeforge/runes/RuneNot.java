@@ -47,11 +47,7 @@ public class RuneNot extends Rune {
         public NegateEffect(@NotNull RuneZone associatedRuneZone, @NotNull Effect modTarget) {
             super(associatedRuneZone, modTarget);
 
-            if (modTarget instanceof RuneHealth.HealthEffect) {
-                System.out.println("modifying health rune");
-                ((RuneHealth.HealthEffect) modTarget).amt *= -1;
-                System.out.println("new heal amt " + ((RuneHealth.HealthEffect) modTarget).amt);
-            }
+            modTarget.flipNegated();
         }
 
         @Override
@@ -61,9 +57,21 @@ public class RuneNot extends Rune {
 
         @Override
         public void unmodify(@NotNull Effect effect) {
-            if (effect instanceof RuneHealth.HealthEffect) {
-                ((RuneHealth.HealthEffect) effect).amt *= -1;
+            effect.flipNegated();
+        }
+
+        @Override
+        public void flipNegated() {
+            super.flipNegated();
+            getModTarget().ifPresent(Effect::flipNegated);
+        }
+
+        @Override
+        public void setNegated(boolean negated) {
+            if ((isNegated() && !negated) || (!isNegated() && negated)) {
+                getModTarget().ifPresent(Effect::flipNegated);
             }
+            super.setNegated(negated);
         }
     }
 }
