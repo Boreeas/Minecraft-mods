@@ -395,8 +395,9 @@ public class RunicLine extends Block {
         for (int x = 0; x < runeBlocks.length; x++) {
             for (int z = 0; z < runeBlocks.length; z++) {
 
-                boolean inCircle = (x / 2) * (x / 2) + (z / 2) * (z / 2) <= radius * radius;
+                boolean inCircle = (radius - x) * (radius - x) + (radius - z) * (radius - z) <= radius * radius;
                 boolean isRune = world.getBlock(centerX - radius + x, centerY, centerZ - radius + z) == this;
+                System.out.println("Checking block at " + (x - radius) + ", " + (z - radius) + " :: inCircle=" + inCircle + "/isRune=" + isRune);
 
                 int arrayX;
                 int arrayZ;

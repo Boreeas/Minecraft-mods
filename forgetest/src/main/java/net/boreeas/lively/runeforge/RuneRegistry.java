@@ -1,6 +1,7 @@
 package net.boreeas.lively.runeforge;
 
 import net.boreeas.lively.Lively;
+import net.boreeas.lively.util.ArrayUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -40,6 +41,13 @@ public class RuneRegistry {
     }
 
     private boolean match(@NotNull Rune rune, @NotNull boolean[][] values) {
+        //*
+        System.out.println("Matching rune '" + rune.getName() + "' on clicked blocks");
+        System.out.println("##### " + rune.getName() + " #####");
+        ArrayUtil.dump(rune.getFlags());
+        System.out.println("##### clicked #####");
+        ArrayUtil.dump(values);
+        //*/
         if (rune.height() != values.length || (rune.height() > 0 && (rune.width() != values[0].length))) return false;
         for (int z = 0; z < rune.height(); z++) {
             for (int x = 0; x < rune.width(); x++) {
