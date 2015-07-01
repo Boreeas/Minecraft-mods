@@ -65,13 +65,5 @@ public class RuneNot extends Rune {
             super.flipNegated();
             getModTarget().ifPresent(Effect::flipNegated);
         }
-
-        @Override
-        public void setNegated(boolean negated) {
-            if ((isNegated() && !negated) || (!isNegated() && negated)) {
-                getModTarget().ifPresent(Effect::flipNegated);
-            }
-            super.setNegated(negated);
-        }
     }
 }

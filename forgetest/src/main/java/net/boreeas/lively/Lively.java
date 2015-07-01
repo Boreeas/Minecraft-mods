@@ -8,6 +8,7 @@ import net.boreeas.lively.runeforge.*;
 import net.boreeas.lively.runeforge.runes.RuneContain;
 import net.boreeas.lively.runeforge.runes.RuneHealth;
 import net.boreeas.lively.runeforge.runes.RuneNot;
+import net.boreeas.lively.runeforge.runes.RuneSelf;
 import net.boreeas.lively.streams.StreamBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.creativetab.CreativeTabs;
@@ -68,6 +69,7 @@ public class Lively {
         runeRegistry.register(new RuneHealth());
         runeRegistry.register(new RuneNot());
         runeRegistry.register(new RuneContain());
+        runeRegistry.register(new RuneSelf());
 
         MinecraftForge.EVENT_BUS.register(RunicLine.INSTANCE);
         FMLCommonHandler.instance().bus().register(effectZoneLookup);

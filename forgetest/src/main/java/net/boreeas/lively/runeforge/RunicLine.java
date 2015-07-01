@@ -18,10 +18,7 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -209,7 +206,7 @@ public class RunicLine extends Block {
             player.addChatMessage(new ChatComponentText("The energy circulates inside the rune. But nothing happens..."));
         } else {
             player.addChatMessage(new ChatComponentText("The energy circulates inside the rune. You feel a distant humming..."));
-            activateRune(match.get(), new GlobalCoord(world, x, y + 1, z), radius, focusRatings.get(world.getBlock(x, y, z)), circle.getOk());
+            activateRune(match.get(), new GlobalCoord(world, x, y + 1, z), radius, focusRatings.get(world.getBlock(x, y, z)), circle.getOk(), player);
         }
     }
 
@@ -220,8 +217,8 @@ public class RunicLine extends Block {
         player.addChatMessage(new ChatComponentText("(Containment circle lacking component " + fmtX + ", " + fmtZ + ")"));
     }
 
-    private void activateRune(@NotNull Rune match, @NotNull GlobalCoord coords, int radius, int focusRating, int containmentRating) throws ExecutionException {
-        RuneZone zone = new RuneZone(coords, radius);
+    private void activateRune(@NotNull Rune match, @NotNull GlobalCoord coords, int radius, int focusRating, int containmentRating, EntityPlayer player) throws ExecutionException {
+        RuneZone zone = new RuneZone(coords, radius, player);
 
         int effectStrength = calculateEffectStrength(radius, focusRating, containmentRating);
         EffectZone effectZone = new EffectZone(coords, effectStrength, radius * Math.min(focusRating, containmentRating));
@@ -229,39 +226,46 @@ public class RunicLine extends Block {
         zone.setAssociatedEffect(effect);
         effectZone.setAssociatedEffect(effect);
 
-        checkForModificators(coords.getWorld(), coords.getX(), coords.getY() - 1, coords.getZ(), radius, effect);
+
+        player.addChatMessage(new ChatComponentText(match.getName()));
+
+        checkForModificators(coords.getWorld(), coords.getX(), coords.getY() - 1, coords.getZ(), radius, effect, player);
         Lively.INSTANCE.effectZoneLookup.addEffectZone(effectZone);
         Lively.INSTANCE.runeZoneLookup.add(zone);
     }
 
-    private void checkForModificators(World world, int x, int y, int z, int radius, Effect parent) {
+    private void checkForModificators(World world, int x, int y, int z, int radius, Effect parent, EntityPlayer player) {
+        checkForModificators(world, x, y, z, radius, parent, player, 2);
+    }
+
+    private void checkForModificators(World world, int x, int y, int z, int radius, Effect parent, EntityPlayer player, int indentationLevel) {
 
         Block inCircle = world.getBlock(x + radius, y, z);
         Block nextOut = world.getBlock(x + radius + 1, y, z);
         if (isValidContainmentBlock(inCircle) && isValidContainmentBlock(nextOut) && !isFocusBlock(inCircle)) {
-            scanForModificatorRune(world, x + radius + 1, y, z, Direction.EAST, parent);
+            scanForModificatorRune(world, x + radius + 1, y, z, Direction.EAST, parent, player, indentationLevel);
         }
 
         inCircle = world.getBlock(x - radius, y, z);
         nextOut = world.getBlock(x - radius - 1, y, z);
         if (isValidContainmentBlock(inCircle) && !isFocusBlock(inCircle) && isValidContainmentBlock(nextOut)) {
-            scanForModificatorRune(world, x - radius - 1, y, z, Direction.WEST, parent);
+            scanForModificatorRune(world, x - radius - 1, y, z, Direction.WEST, parent, player, indentationLevel);
         }
 
         inCircle = world.getBlock(x, y, z + radius);
         nextOut = world.getBlock(x, y, z + radius + 1);
         if (isValidContainmentBlock(inCircle) && !isFocusBlock(inCircle) && isValidContainmentBlock(nextOut)) {
-            scanForModificatorRune(world, x, y, z + radius + 1, Direction.SOUTH, parent);
+            scanForModificatorRune(world, x, y, z + radius + 1, Direction.SOUTH, parent, player, indentationLevel);
         }
 
         inCircle = world.getBlock(x, y, z - radius);
         nextOut = world.getBlock(x, y, z - radius - 1);
         if (isValidContainmentBlock(inCircle) && !isFocusBlock(inCircle) && isValidContainmentBlock(nextOut)) {
-            scanForModificatorRune(world, x, y, z - radius - 1, Direction.NORTH, parent);
+            scanForModificatorRune(world, x, y, z - radius - 1, Direction.NORTH, parent, player, indentationLevel);
         }
     }
 
-    private void scanForModificatorRune(World world, int x, int y, int z, Direction direction, Effect parent) {
+    private void scanForModificatorRune(World world, int x, int y, int z, Direction direction, Effect parent, EntityPlayer player, int indentationLevel) {
         Block block = world.getBlock(x, y, z);
         while (isValidContainmentBlock(block) && !isFocusBlock(block)) {
             x += direction.dx;
@@ -270,6 +274,7 @@ public class RunicLine extends Block {
         }
 
         if (!isFocusBlock(world.getBlock(x, y, z))) {
+            player.addChatMessage(new ChatComponentText(spaces(indentationLevel) + "No terminating focus block"));
             return;
         }
 
@@ -287,11 +292,13 @@ public class RunicLine extends Block {
         }
 
         if (!isFocusBlock(world.getBlock(x, y, z))) {
+            player.addChatMessage(new ChatComponentText(spaces(indentationLevel) + "No central focus block"));
             return;
         }
 
         Result<Integer, Vec3Int> circle = matchCircle(world, new Vec3Int(x, y, z), radius);
         if (!circle.isOk()) {
+            player.addChatMessage(new ChatComponentText(spaces(indentationLevel) + "No complete circle"));
             return;
         }
 
@@ -299,15 +306,23 @@ public class RunicLine extends Block {
         Optional<Rune> match = Lively.INSTANCE.runeRegistry.match(runeBlocks);
 
         if (!match.isPresent()) {
+            player.addChatMessage(new ChatComponentText(spaces(indentationLevel) + "Unknown rune"));
             return;
         }
 
-        RuneZone zone = new RuneZone(new GlobalCoord(world, x, y + 1, z), radius);
+        RuneZone zone = new RuneZone(new GlobalCoord(world, x, y + 1, z), radius, player);
         Effect effect = match.get().makeEffect(zone, parent);
         zone.setAssociatedEffect(effect);
 
+        player.addChatMessage(new ChatComponentText(spaces(indentationLevel) + match.get().getName()));
         Lively.INSTANCE.runeZoneLookup.add(zone);
-        checkForModificators(world, x, y, z, radius, effect);
+        checkForModificators(world, x, y, z, radius, effect, player, indentationLevel + 2);
+    }
+
+    private String spaces(int amt) {
+        char[] array = new char[amt];
+        Arrays.fill(array, ' ');
+        return new String(array);
     }
 
     /**

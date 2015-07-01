@@ -1,6 +1,7 @@
 package net.boreeas.lively.runeforge;
 
 import net.boreeas.lively.util.GlobalCoord;
+import net.minecraft.entity.player.EntityPlayer;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -9,14 +10,17 @@ import org.jetbrains.annotations.NotNull;
 public class RuneZone extends Zone {
 
     private Effect associatedEffect;
+    private EntityPlayer creator;
 
-    public RuneZone(@NotNull GlobalCoord coords, int radius) {
+    public RuneZone(@NotNull GlobalCoord coords, int radius, @NotNull EntityPlayer creator) {
         super(coords, radius);
+        this.creator = creator;
     }
 
-    public RuneZone(@NotNull GlobalCoord coords, int radius, @NotNull Effect associatedEffect) {
+    public RuneZone(@NotNull GlobalCoord coords, int radius, @NotNull Effect associatedEffect, @NotNull EntityPlayer creator) {
         super(coords, radius);
         this.associatedEffect = associatedEffect;
+        this.creator = creator;
     }
 
     public void setAssociatedEffect(Effect associatedEffect) {
@@ -27,5 +31,9 @@ public class RuneZone extends Zone {
 
     public @NotNull Effect getAssociatedEffect() {
         return associatedEffect;
+    }
+
+    public @NotNull EntityPlayer getCreator() {
+        return creator;
     }
 }

@@ -7,9 +7,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 
 /**
@@ -31,15 +29,7 @@ public abstract class Effect {
     private Optional<Effect> modTarget = Optional.empty();
     private boolean isNegated;
 
-    /**
-     * Filter to which entities the effect should be granted. Grant or deny depends on {@link #filterType}
-     */
-    public Predicate<Object> filter = e -> false;
-    /**
-     * Filter behavior. {@link FilterType#DENY_ON_PASS} denies the effect
-     * to all
-     */
-    public FilterType filterType = FilterType.DENY_ON_PASS;
+    private Set<Predicate<Object>> filters = new HashSet<>();
 
     public Effect(@NotNull RuneZone assosciatedRune) {
         this.associatedRuneZone = assosciatedRune;
@@ -128,21 +118,40 @@ public abstract class Effect {
     }
 
     public void setNegated(boolean negated) {
-        this.isNegated = negated;
+        if (this.isNegated != negated) flipNegated();
     }
 
     public void flipNegated() {
         this.isNegated = !isNegated;
     }
 
-    protected boolean isDisabledByFilter(Object p) {
-        boolean filterPass = filter.test(p);
-        return (filterPass && filterType == FilterType.DENY_ON_PASS) || (!filterPass && filterType == FilterType.APPLY_ON_PASS);
+    protected boolean isDisabledByFilter(@NotNull Object obj) {
+        if (filters.isEmpty()) {
+            // No filters means apply to anything
+            return false;
+        } else {
+            // Filters means apply only to those that pass the filter
+            for (Predicate<Object> pred: filters) {
+                if (pred.test(obj)) return false;
+            }
+
+            return true;
+        }
     }
 
-    public Optional<Effect> getModTarget() {
+    public @NotNull Optional<Effect> getModTarget() {
         return modTarget;
     }
 
-    public enum FilterType {APPLY_ON_PASS, DENY_ON_PASS}
+    public void addFilter(@NotNull Predicate<Object> filter) {
+        this.filters.add(filter);
+    }
+
+    public void removeFilter(Predicate<Object> filter) {
+        this.filters.remove(filter);
+    }
+
+    public @NotNull RuneZone getAssociatedRuneZone() {
+        return associatedRuneZone;
+    }
 }

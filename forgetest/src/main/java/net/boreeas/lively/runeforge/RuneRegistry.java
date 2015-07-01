@@ -40,8 +40,9 @@ public class RuneRegistry {
     }
 
     private boolean match(@NotNull Rune rune, @NotNull boolean[][] values) {
-        for (int z = 0; z < values.length; z++) {
-            for (int x = 0; x < values[z].length; x++) {
+        if (rune.height() != values.length || (rune.height() > 0 && (rune.width() != values[0].length))) return false;
+        for (int z = 0; z < rune.height(); z++) {
+            for (int x = 0; x < rune.width(); x++) {
                 if (rune.isSet(x, z) != values[z][x]) return false;
             }
         }

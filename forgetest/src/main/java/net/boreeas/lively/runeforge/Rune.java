@@ -36,7 +36,7 @@ public abstract class Rune {
     }
 
     public int width() {
-        return flags[0].length;
+        return height() > 0 ? flags[0].length : 0;
     }
 
     public int height() {
@@ -45,5 +45,9 @@ public abstract class Rune {
 
     public boolean isSet(int x, int z) {
         return flags[z][x];
+    }
+
+    boolean[][] getFlags() {
+        return flags;
     }
 }
