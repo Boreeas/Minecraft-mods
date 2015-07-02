@@ -18,14 +18,17 @@ buildscript {
 apply plugin: 'forge'
 apply plugin: 'java'
 
-version = "0.1-SNAPSHOT-2"
+sourceCompatibility='1.8'
+targetCompatibility='1.8'
+
+version = "0.1-SNAPSHOT-3"
 group= "net.boreeas.lively" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "lively"
 
 idea.module.inheritOutputDirs = true
 
 minecraft {
-    version = "1.7.10-10.13.3.1395-1710ls"
+    version = "1.7.10-10.13.4.1448-1.7.10"
     runDir = "eclipse"
 }
 
@@ -65,4 +68,9 @@ processResources
     from(sourceSets.main.resources.srcDirs) {
         exclude 'mcmod.info'
     }
+}
+
+task createDevJar(type: Jar) {
+    from sourceSets.main.output
+    classifier = 'deobf'
 }

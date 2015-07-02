@@ -1,6 +1,8 @@
 package net.boreeas.lively.runeforge;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import net.boreeas.lively.Lively;
 import net.boreeas.lively.util.*;
 import net.minecraft.block.Block;
@@ -85,6 +87,7 @@ public class RunicLine extends Block {
     }
 
     @Override
+    @SideOnly(Side.CLIENT)
     public void registerBlockIcons(@NotNull IIconRegister register) {
         this.iconSingle = register.registerIcon(Lively.muid("rune_single"));
         this.iconIntersection = register.registerIcon(Lively.muid("rune_intersection"));
