@@ -49,7 +49,7 @@ public abstract class Effect {
         modificators.add(effect);
     }
 
-    public abstract EffectTarget getEffectType();
+    public abstract Set<EffectTarget> getEffectTargets();
 
     public boolean applyToPlayer(@NotNull EntityPlayer player, int effectStrength) {
         boolean result = false;

@@ -9,7 +9,9 @@ import net.boreeas.lively.runeforge.RuneZone;
 import net.minecraft.entity.EntityLivingBase;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -140,8 +142,8 @@ public class RuneHealth extends Rune {
         }
 
         @Override
-        public EffectTarget getEffectType() {
-            return EffectTarget.ENTITY_LIVING;
+        public Set<EffectTarget> getEffectTargets() {
+            return Collections.singleton(EffectTarget.ENTITY_LIVING);
         }
     }
 

@@ -6,6 +6,8 @@ import net.boreeas.lively.runeforge.Rune;
 import net.boreeas.lively.runeforge.RuneZone;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -60,8 +62,8 @@ public class RuneSelf extends Rune {
         }
 
         @Override
-        public EffectTarget getEffectType() {
-            return EffectTarget.WORLD_ONCE;
+        public Set<EffectTarget> getEffectTargets() {
+            return Collections.emptySet();
         }
 
         private class SelfFilter implements Predicate<Object> {

@@ -12,6 +12,8 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.play.server.S12PacketEntityVelocity;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -62,8 +64,8 @@ public class RuneContain extends Rune {
         }
 
         @Override
-        public EffectTarget getEffectType() {
-            return EffectTarget.ENTITY;
+        public Set<EffectTarget> getEffectTargets() {
+            return Collections.singleton(EffectTarget.ENTITY);
         }
 
         @Override

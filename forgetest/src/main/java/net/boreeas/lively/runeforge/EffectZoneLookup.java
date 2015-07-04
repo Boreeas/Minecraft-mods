@@ -39,22 +39,24 @@ public class EffectZoneLookup {
 
         for (int x = minChunkX; x <= maxChunkX; x++) {
             for (int z = minChunkZ; z <= maxChunkZ; z++) {
-                switch (zone.getEffect().getEffectType()) {
-                    case PLAYER:
-                        playerTargetedZonesByChunk.get(new GlobalCoord(zone.getCoords().getWorld(), x, 0, z)).add(zone);
-                        break;
-                    case ENTITY_LIVING:
-                        livingTargetedZonesByChunk.get(new GlobalCoord(zone.getCoords().getWorld(), x, 0, z)).add(zone);
-                        break;
-                    case ENTITY:
-                        entityTargetedZonesByChunk.get(new GlobalCoord(zone.getCoords().getWorld(), x, 0, z)).add(zone);
-                        break;
-                    case WORLD_ONCE:
-                        onceWorldTargetedZonesByChunk.get(new GlobalCoord(zone.getCoords().getWorld(), x, 0, z)).add(zone);
-                        break;
-                    case WORLD_PERIODICALLY:
-                        periodicallyWorldTargetedZonesByChunk.get(new GlobalCoord(zone.getCoords().getWorld(), x, 0, z)).add(zone);
-                        break;
+                for (Effect.EffectTarget target: zone.getEffect().getEffectTargets()) {
+                    switch (target) {
+                        case PLAYER:
+                            playerTargetedZonesByChunk.get(new GlobalCoord(zone.getCoords().getWorld(), x, 0, z)).add(zone);
+                            break;
+                        case ENTITY_LIVING:
+                            livingTargetedZonesByChunk.get(new GlobalCoord(zone.getCoords().getWorld(), x, 0, z)).add(zone);
+                            break;
+                        case ENTITY:
+                            entityTargetedZonesByChunk.get(new GlobalCoord(zone.getCoords().getWorld(), x, 0, z)).add(zone);
+                            break;
+                        case WORLD_ONCE:
+                            onceWorldTargetedZonesByChunk.get(new GlobalCoord(zone.getCoords().getWorld(), x, 0, z)).add(zone);
+                            break;
+                        case WORLD_PERIODICALLY:
+                            periodicallyWorldTargetedZonesByChunk.get(new GlobalCoord(zone.getCoords().getWorld(), x, 0, z)).add(zone);
+                            break;
+                    }
                 }
 
                 globalZones.get(new GlobalCoord(zone.getCoords().getWorld(), x, 0, z)).add(zone);
@@ -95,22 +97,24 @@ public class EffectZoneLookup {
             for (int x = minChunkX; x <= maxChunkX; x++) {
                 for (int z = minChunkZ; z <= maxChunkZ; z++) {
                     GlobalCoord chunkCoords = new GlobalCoord(zone.getCoords().getWorld(), x, 0, z);
-                    switch (zone.getEffect().getEffectType()) {
-                        case PLAYER:
-                            removeFrom(zone, chunkCoords, playerTargetedZonesByChunk);
-                            break;
-                        case ENTITY_LIVING:
-                            removeFrom(zone, chunkCoords, livingTargetedZonesByChunk);
-                            break;
-                        case ENTITY:
-                            removeFrom(zone, chunkCoords, entityTargetedZonesByChunk);
-                            break;
-                        case WORLD_ONCE:
-                            removeFrom(zone, chunkCoords, onceWorldTargetedZonesByChunk);
-                            break;
-                        case WORLD_PERIODICALLY:
-                            removeFrom(zone, chunkCoords, periodicallyWorldTargetedZonesByChunk);
-                            break;
+                    for (Effect.EffectTarget target: zone.getEffect().getEffectTargets()) {
+                        switch (target) {
+                            case PLAYER:
+                                removeFrom(zone, chunkCoords, playerTargetedZonesByChunk);
+                                break;
+                            case ENTITY_LIVING:
+                                removeFrom(zone, chunkCoords, livingTargetedZonesByChunk);
+                                break;
+                            case ENTITY:
+                                removeFrom(zone, chunkCoords, entityTargetedZonesByChunk);
+                                break;
+                            case WORLD_ONCE:
+                                removeFrom(zone, chunkCoords, onceWorldTargetedZonesByChunk);
+                                break;
+                            case WORLD_PERIODICALLY:
+                                removeFrom(zone, chunkCoords, periodicallyWorldTargetedZonesByChunk);
+                                break;
+                        }
                     }
 
                     removeFrom(zone, chunkCoords, globalZones);

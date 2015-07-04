@@ -6,6 +6,9 @@ import net.boreeas.lively.runeforge.Rune;
 import net.boreeas.lively.runeforge.RuneZone;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
+import java.util.Set;
+
 /**
  * @author Malte Schütze
  */
@@ -51,8 +54,8 @@ public class RuneNot extends Rune {
         }
 
         @Override
-        public EffectTarget getEffectType() {
-            return EffectTarget.WORLD_ONCE;
+        public Set<EffectTarget> getEffectTargets() {
+            return Collections.emptySet();
         }
 
         @Override

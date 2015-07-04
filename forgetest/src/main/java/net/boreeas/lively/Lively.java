@@ -3,8 +3,16 @@ package net.boreeas.lively;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.common.network.NetworkRegistry;
+import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import cpw.mods.fml.common.registry.GameRegistry;
+import cpw.mods.fml.relauncher.Side;
 import net.boreeas.lively.runeforge.*;
+import net.boreeas.lively.runeforge.messages.AddActiveLightRune;
+import net.boreeas.lively.runeforge.messages.RemoveActiveLightRune;
+import net.boreeas.lively.runeforge.messages.RenderList;
+import net.boreeas.lively.runeforge.render.ClientRenderHandler;
+import net.boreeas.lively.runeforge.render.ServerRenderHandler;
 import net.boreeas.lively.runeforge.runes.*;
 import net.boreeas.lively.streams.StreamBlock;
 import net.minecraft.block.material.Material;
@@ -38,12 +46,19 @@ public class Lively {
     public final EffectZoneLookup effectZoneLookup = new EffectZoneLookup();
     public final RuneZoneLookup runeZoneLookup = new RuneZoneLookup();
 
+    public final ClientRenderHandler clientRenderHandler = new ClientRenderHandler();
+    public final ServerRenderHandler serverRenderHandler = new ServerRenderHandler();
+
+    public final SimpleNetworkWrapper network = NetworkRegistry.INSTANCE.newSimpleChannel(MOD_ID);
+
+    //*
     public static final Fluid FLUID_STREAM_WATER = new Fluid(FLUID_STREAM_WATER_NAME);
     public static final StreamBlock BLOCK_STREAM_SOURCE = new StreamBlock(FLUID_STREAM_WATER, Material.water);
 
     static {
         FLUID_STREAM_WATER.setBlock(BLOCK_STREAM_SOURCE);
     }
+    //*/
 
     @Mod.EventHandler
     public void preload(@NotNull FMLPreInitializationEvent evt) {
@@ -60,6 +75,11 @@ public class Lively {
 
         //GameRegistry.registerWorldGenerator(new StreamSourceGenerator(), 100);
 
+        network.registerMessage(ClientRenderHandler.RenderListMessageHandler.class, RenderList.class, 0, Side.CLIENT);
+        network.registerMessage(ClientRenderHandler.AddLightRuneHandler.class, AddActiveLightRune.class, 1, Side.CLIENT);
+        network.registerMessage(ClientRenderHandler.RemoveLightRuneHandler.class, RemoveActiveLightRune.class, 2, Side.CLIENT);
+
+
         GameRegistry.registerBlock(RunicLine.INSTANCE, RunicLine.NAME);
         GameRegistry.registerItem(OuterRuneItem.INSTANCE, OuterRuneItem.NAME);
 
@@ -68,8 +88,11 @@ public class Lively {
         runeRegistry.register(new RuneContain());
         runeRegistry.register(new RuneSelf());
         runeRegistry.register(new RuneHostile());
+        runeRegistry.register(new RuneLight());
 
         MinecraftForge.EVENT_BUS.register(RunicLine.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(clientRenderHandler);
+        MinecraftForge.EVENT_BUS.register(serverRenderHandler);
         FMLCommonHandler.instance().bus().register(effectZoneLookup);
     }
 

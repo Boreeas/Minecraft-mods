@@ -9,6 +9,8 @@ import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.passive.EntityWolf;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -64,8 +66,8 @@ public class RuneHostile extends Rune {
         }
 
         @Override
-        public EffectTarget getEffectType() {
-            return EffectTarget.WORLD_ONCE;
+        public Set<EffectTarget> getEffectTargets() {
+            return Collections.emptySet();
         }
 
         private class HostileFilter implements Predicate<Object> {
